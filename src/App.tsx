@@ -19,7 +19,14 @@ import { NotFoundPage } from './components/User/NotFoundPage';
 
 export default function App() {
   const [users, setUsers] = useState<BusinessUser[]>([]);
-  const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
+  const getActiveLocation = () => {
+    if (window.location.hash && window.location.hash.length > 1) {
+      return window.location.hash.replace(/^#/, '');
+    }
+    return window.location.pathname;
+  };
+
+  const [currentPath, setCurrentPath] = useState<string>(getActiveLocation());
 
   // Modals
   const [editorModalOpen, setEditorModalOpen] = useState(false);
@@ -34,16 +41,25 @@ export default function App() {
     const loaded = getStoredUsers();
     setUsers(loaded);
 
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
+    const handleRouteChange = () => {
+      setCurrentPath(getActiveLocation());
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('hashchange', handleRouteChange);
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('hashchange', handleRouteChange);
+    };
   }, []);
 
   const navigateTo = (path: string) => {
-    window.history.pushState({}, '', path);
+    try {
+      window.history.pushState({}, '', path);
+    } catch (e) {
+      // Fallback to hash navigation for strict static hosts
+      window.location.hash = path;
+    }
     setCurrentPath(path);
     window.scrollTo(0, 0);
   };
@@ -114,13 +130,13 @@ export default function App() {
     const cleanPath = currentPath.replace(/\/$/, '') || '/';
     const parts = cleanPath.split('/').filter(Boolean);
 
-    if (parts.length === 0 || parts[0] === 'admin') {
-      return { type: 'admin' as const };
-    }
+    // Look for 'user' or 'admin' segment anywhere in parts array
+    const userIndex = parts.findIndex((p) => p.toLowerCase() === 'user');
+    const adminIndex = parts.findIndex((p) => p.toLowerCase() === 'admin');
 
-    if (parts[0] === 'user' && parts[1]) {
-      const username = parts[1].toLowerCase();
-      const isContact = parts[2] === 'contact';
+    if (userIndex !== -1 && parts[userIndex + 1]) {
+      const username = parts[userIndex + 1].toLowerCase();
+      const isContact = parts[userIndex + 2] === 'contact';
       const foundUser = getUserByUsername(username);
 
       if (foundUser) {

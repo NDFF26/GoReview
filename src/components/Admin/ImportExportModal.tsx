@@ -262,14 +262,12 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (confirm('Are you sure you want to restore default sample clients & reviews?')) {
-                onResetToDefaults();
-                localStorage.removeItem('goreview_business_topics_reviews_v1');
-                setSuccessMsg('Restored default client profiles and review templates!');
-                setTimeout(() => onClose(), 1500);
-              }
+              onResetToDefaults();
+              localStorage.removeItem('goreview_business_topics_reviews_v1');
+              setSuccessMsg('Restored default client profiles and review templates!');
+              setTimeout(() => onClose(), 1200);
             }}
-            className="flex items-center space-x-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-xs font-medium transition-colors"
+            className="flex items-center space-x-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-xs font-semibold transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Reset Demo Data</span>

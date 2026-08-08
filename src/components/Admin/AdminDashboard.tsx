@@ -44,6 +44,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<BusinessUser | null>(null);
 
   const filteredUsers = users.filter((u) => {
     const term = searchTerm.toLowerCase();
@@ -299,11 +300,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </button>
 
                         <button
-                          onClick={() => {
-                            if (window.confirm(`Are you sure you want to permanently delete "${u.businessName}"?`)) {
-                              onDeleteUser(u.id);
-                            }
-                          }}
+                          onClick={() => setUserToDelete(u)}
                           title="Delete Client"
                           className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                         >
@@ -414,6 +411,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Delete User Confirmation Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-7 text-center relative border border-slate-200">
+            <div className="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xs">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete Client Business?</h3>
+            <p className="text-xs text-slate-600 leading-relaxed mb-6">
+              Are you sure you want to permanently delete <strong className="text-slate-900">{userToDelete.businessName}</strong> (<span className="font-mono text-blue-600">/{userToDelete.username}</span>)? All associated link data and topic configurations will be removed.
+            </p>
+
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => setUserToDelete(null)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteUser(userToDelete.id);
+                  setUserToDelete(null);
+                }}
+                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-red-200 transition-all active:scale-95"
+              >
+                Yes, Delete Client
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

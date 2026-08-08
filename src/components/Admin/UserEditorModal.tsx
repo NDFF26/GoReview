@@ -12,7 +12,8 @@ import {
   CheckCircle2,
   Clock,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  AlertCircle
 } from 'lucide-react';
 import { BusinessUser, ReviewOption } from '../../types/user';
 import { getStoredReviewDataMap, saveReviewDataMap } from '../../utils/reviewData';
@@ -76,11 +77,14 @@ export const UserEditorModal: React.FC<UserEditorModalProps> = ({
   const [newTopicInput, setNewTopicInput] = useState('');
   const [newLanguageInput, setNewLanguageInput] = useState('');
 
+  const [fileErrorMsg, setFileErrorMsg] = useState<string | null>(null);
+
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFileErrorMsg(null);
     if (file.size > 8 * 1024 * 1024) {
-      alert('File size exceeds 8MB limit. Please choose a smaller PNG or JPG image file.');
+      setFileErrorMsg('Logo file exceeds 8MB limit. Please choose a smaller PNG or JPG image.');
       return;
     }
     const reader = new FileReader();
@@ -96,8 +100,9 @@ export const UserEditorModal: React.FC<UserEditorModalProps> = ({
   const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFileErrorMsg(null);
     if (file.size > 8 * 1024 * 1024) {
-      alert('File size exceeds 8MB limit. Please choose a smaller PNG or JPG image file.');
+      setFileErrorMsg('Cover file exceeds 8MB limit. Please choose a smaller PNG or JPG image.');
       return;
     }
     const reader = new FileReader();
@@ -251,8 +256,9 @@ export const UserEditorModal: React.FC<UserEditorModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFileErrorMsg(null);
     if (!formData.username || !formData.businessName) {
-      alert('Please fill in both Username / Slug and Business Name');
+      setFileErrorMsg('Please fill in both Username / Slug and Business Name');
       return;
     }
 
@@ -401,6 +407,12 @@ export const UserEditorModal: React.FC<UserEditorModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6">
+          {fileErrorMsg && (
+            <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-xs flex items-center space-x-2 font-medium">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+              <span>{fileErrorMsg}</span>
+            </div>
+          )}
           {/* TAB 1: BASIC INFO */}
           {activeTab === 'basic' && (
             <div className="space-y-4 animate-in fade-in">

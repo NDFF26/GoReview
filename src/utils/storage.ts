@@ -1,5 +1,6 @@
 import { BusinessUser } from '../types/user';
 import { INITIAL_USERS } from '../data/defaultUsers';
+import { getStoredReviewDataMap, saveReviewDataMap } from './reviewData';
 
 const STORAGE_KEY = 'goreview_business_users_v1';
 
@@ -62,6 +63,13 @@ export function deleteUser(userId: string): BusinessUser[] {
   const users = getStoredUsers();
   const targetStr = String(userId).trim().toLowerCase();
   
+  // Find target user to clean up review data map
+  const targetUser = users.find((u) => {
+    const cleanId = String(u.id).trim().toLowerCase();
+    const cleanUsername = String(u.username).trim().toLowerCase();
+    return cleanId === targetStr || cleanUsername === targetStr;
+  });
+
   const filtered = users.filter((u) => {
     const cleanId = String(u.id).trim().toLowerCase();
     const cleanUsername = String(u.username).trim().toLowerCase();
@@ -69,6 +77,21 @@ export function deleteUser(userId: string): BusinessUser[] {
   });
 
   saveUsers(filtered);
+
+  // Clean up review data map for deleted username
+  if (targetUser && targetUser.username) {
+    try {
+      const reviewMap = getStoredReviewDataMap();
+      const cleanUname = targetUser.username.toLowerCase();
+      if (reviewMap[cleanUname]) {
+        delete reviewMap[cleanUname];
+        saveReviewDataMap(reviewMap);
+      }
+    } catch (e) {
+      console.error('Failed to cleanup review map on user delete:', e);
+    }
+  }
+
   return filtered;
 }
 
