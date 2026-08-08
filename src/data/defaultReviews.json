@@ -1,0 +1,138 @@
+{
+  "velocityi2": {
+    "businessName": "Velocity - Igniting Innovation",
+    "topics": [
+      "PCB Design",
+      "Hardware Design",
+      "Firmware",
+      "Product Development",
+      "Product Purchase"
+    ],
+    "languages": [
+      "English",
+      "Gujarati",
+      "Hindi"
+    ],
+    "reviews": {
+      "PCB Design": {
+        "English": [
+          "Flawless track clearance and spacing configuration.",
+          "High quality PCB design with excellent signal integrity and neat component placement.",
+          "Outstanding PCB routing skills. Rapid turnaround time and very cooperative team!"
+        ],
+        "Gujarati": [
+          "PCB design and track clearance khub j saras chhe. Quality uttam chhe.",
+          "Khub j professional PCB layout and fast service aapel chhe.",
+          "Velocity team tarafthi khub j uttam PCB designing support malyo."
+        ],
+        "Hindi": [
+          "PCB design aur track clearance bahut hi shandar hai. Quality behtareen hai.",
+          "Bahut hi professional PCB layout aur fast service mili.",
+          "Velocity team ki taraf se behtareen PCB designing support mila."
+        ]
+      },
+      "Hardware Design": {
+        "English": [
+          "Exceptional hardware architecture with reliable performance and top quality components.",
+          "Great schematic design and thermal management solution for our electronic product.",
+          "Very knowledgeable team in hardware development and power optimization."
+        ],
+        "Gujarati": [
+          "Hardware architecture and design khub j majboot and quality-wise uttam chhe.",
+          "Amara electronic product mate uttam hardware solution puru padyu."
+        ],
+        "Hindi": [
+          "Hardware architecture aur design bahut hi majboot aur quality-wise badhiya hai.",
+          "Hamare electronic product ke liye behtareen hardware solution diya."
+        ]
+      },
+      "Firmware": {
+        "English": [
+          "Robust firmware implementation with zero bugs and smooth microcontroller execution.",
+          "Clean code architecture and highly efficient firmware performance for our IoT module.",
+          "Fast response times and seamless microcontroller integration!"
+        ],
+        "Gujarati": [
+          "Firmware coding and programming khub j saral and bug-free chhe.",
+          "Microcontroller coding mate uttam support aapyo."
+        ],
+        "Hindi": [
+          "Firmware coding aur programming bahut hi sateek aur bug-free hai.",
+          "Microcontroller coding ke liye uttkrisht support mila."
+        ]
+      },
+      "Product Development": {
+        "English": [
+          "Complete end-to-end product development support from prototyping to final production.",
+          "Impressive innovation, robust testing, and smooth execution from concept to final product.",
+          "Transformed our idea into a market-ready electronic product effortlessly!"
+        ],
+        "Gujarati": [
+          "Product development concept thi laine final sudhi nu kaam uttam chhe.",
+          "Idea mathi real product banavama khub saras margdarshan aapyu."
+        ],
+        "Hindi": [
+          "Product development concept se lekar final tak ka kaam behtareen hai.",
+          "Idea se real product banane mein bahut badhiya guidance mila."
+        ]
+      },
+      "Product Purchase": {
+        "English": [
+          "Seamless ordering process, genuine hardware modules, and extremely fast delivery.",
+          "High quality products delivered on time with great customer support and competitive pricing.",
+          "Top quality hardware components and excellent post-purchase support."
+        ],
+        "Gujarati": [
+          "Khub j saral ordering process and uttam quality vala products.",
+          "Samaysar delivery and khub j vajbi bhav ma saman malyo."
+        ],
+        "Hindi": [
+          "Bahut hi aasan ordering process aur behtareen quality ke products.",
+          "Time par delivery aur sahi price mein saman mila."
+        ]
+      }
+    }
+  },
+  "khushiagency": {
+    "businessName": "Khushi Agency",
+    "topics": [
+      "Insurance Advisory",
+      "Documentation",
+      "Financial Consulting",
+      "Property Paperwork"
+    ],
+    "languages": [
+      "English",
+      "Gujarati",
+      "Hindi"
+    ],
+    "reviews": {
+      "Insurance Advisory": {
+        "English": [
+          "Clear insurance guidance and hassle-free policy processing. Very trustworthy team!",
+          "Resolved my health insurance claim issue smoothly. Highly recommended."
+        ],
+        "Gujarati": [
+          "Insurance advisory and policy processing khub j saral and fast rahyu.",
+          "Khushi Agency tarafthi uttam service and sachu guidance malyu."
+        ],
+        "Hindi": [
+          "Insurance advice aur policy processing bahut hi aasan aur fast thi.",
+          "Khushi Agency ki taraf se acchi service aur sahi guidance mila."
+        ]
+      },
+      "Documentation": {
+        "English": [
+          "Super fast documentation and government paperwork support. Saved a lot of my time!",
+          "Very professional and transparent service for all paper work."
+        ],
+        "Gujarati": [
+          "Documentation and paperwork khub j fast and accurate karee aapyu."
+        ],
+        "Hindi": [
+          "Document work bahut hi fast aur accurate tarike se kiya gaya."
+        ]
+      }
+    }
+  }
+}

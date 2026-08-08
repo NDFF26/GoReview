@@ -1,0 +1,6 @@
+{
+  "name": "Google Review & Digital Contact Solution",
+  "description": "Admin panel to dynamically manage business clients with live Google Review pages, vCard contact pages, and QR code generators without code changes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

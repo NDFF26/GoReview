@@ -1,0 +1,78 @@
+{
+  "velocityi2": {
+    "businessName": "Velocity - Igniting Innovation",
+    "topics": [
+      "PCB Design",
+      "Hardware Design",
+      "Firmware",
+      "Product Development",
+      "Product Purchase"
+    ],
+    "languages": [
+      "English",
+      "Gujarati",
+      "Hindi"
+    ],
+    "reviews": {
+      "PCB Design": {
+        "English": [
+          "Flawless track clearance and spacing configuration.",
+          "High quality PCB design with excellent signal integrity and neat component placement.",
+          "Outstanding PCB routing skills. Rapid turnaround time and very cooperative team!"
+        ],
+        "Gujarati": [
+          "પીસીબી ડિઝાઇન અને ટ્રેક ક્લિયરન્સ ખુબ જ સરસ છે. ગુણવત્તા ઉત્તમ છે.",
+          "ખૂબ જ પ્રોફેશનલ પીસીબી લેઆઉટ અને ઝડપી સર્વિસ આપેલ છે."
+        ],
+        "Hindi": [
+          "पीसीबी डिज़ाइन और ट्रैक क्लीयरेंस बहुत ही शानदार है। गुणवत्ता बेहतरीन है।",
+          "बहुत ही प्रोफेशनल पीसीबी लेआउट और त्वरित सेवा मिली।"
+        ]
+      },
+      "Hardware Design": {
+        "English": [
+          "Exceptional hardware architecture with reliable performance and top quality components."
+        ],
+        "Gujarati": [
+          "હાર્ડવેર આર્કિટેક્ચર અને ડિઝાઇન ખૂબ જ મજબૂત અને ગુણવત્તાયુક્ત છે."
+        ],
+        "Hindi": [
+          "हार्डवेयर आर्किटेक्चर और डिज़ाइन बहुत ही मजबूत और गुणवत्तापूर्ण है।"
+        ]
+      },
+      "Firmware": {
+        "English": [
+          "Robust firmware implementation with zero bugs and smooth microcontroller execution."
+        ],
+        "Gujarati": [
+          "ફર્મવેર કોડિંગ અને પ્રોગ્રામિંગ ખૂબ જ સરળ અને બગ-ફ્રી છે."
+        ],
+        "Hindi": [
+          "फर्मवेयर कोडिंग और प्रोग्रामिंग बहुत ही सटीक और बग-फ्री है।"
+        ]
+      },
+      "Product Development": {
+        "English": [
+          "Complete end-to-end product development support from prototyping to final production."
+        ],
+        "Gujarati": [
+          "પ્રોડક્ટ ડેવલપમેન્ટ કોન્સેપ્ટથી લઈને ફાઈનલ સુધીનું કામ ઉત્કૃષ્ટ છે."
+        ],
+        "Hindi": [
+          "प्रोडक्ट डेवलपमेंट कॉन्सेप्ट से लेकर फाइनल तक का काम उत्कृष्ट है।"
+        ]
+      },
+      "Product Purchase": {
+        "English": [
+          "Seamless ordering process, genuine hardware modules, and extremely fast delivery."
+        ],
+        "Gujarati": [
+          "ખૂબ જ સરળ ઓર્ડરિંગ પ્રક્રિયા અને ઉત્તમ ગુણવત્તાવાળા ઉત્પાદનો."
+        ],
+        "Hindi": [
+          "बहुत ही आसान ऑर्डरिंग प्रक्रिया और बेहतरीन गुणवत्ता वाले उत्पाद।"
+        ]
+      }
+    }
+  }
+}
