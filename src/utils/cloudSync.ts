@@ -2,7 +2,7 @@ import { BusinessUser } from '../types/user';
 import { getStoredUsers, saveUsers, getAdminPassword, setAdminPassword } from './storage';
 
 const PRIMARY_SYNC_API = '/api/sync';
-const FALLBACK_KV_ENDPOINT = 'https://kvdb.io/goreview_saas_db_v2/master_payload';
+const PUBLIC_CLOUD_OBJECT_URL = 'https://api.restful-api.dev/objects/ff8081819f7e10ae019fe14562b7114c';
 
 export interface CloudPayload {
   users: BusinessUser[];
@@ -14,24 +14,28 @@ export function mergeUserLists(localUsers: BusinessUser[], cloudUsers: BusinessU
   const map = new Map<string, BusinessUser>();
 
   // Process cloud users first
-  for (const u of cloudUsers) {
-    if (u && u.username) {
-      map.set(u.username.toLowerCase(), u);
+  if (Array.isArray(cloudUsers)) {
+    for (const u of cloudUsers) {
+      if (u && u.username) {
+        map.set(u.username.toLowerCase(), u);
+      }
     }
   }
 
   // Process local users, keeping the newest updated version or combining missing users
-  for (const u of localUsers) {
-    if (!u || !u.username) continue;
-    const key = u.username.toLowerCase();
-    const existing = map.get(key);
-    if (!existing) {
-      map.set(key, u);
-    } else {
-      const localTime = new Date(u.updatedAt || 0).getTime();
-      const cloudTime = new Date(existing.updatedAt || 0).getTime();
-      if (localTime >= cloudTime) {
+  if (Array.isArray(localUsers)) {
+    for (const u of localUsers) {
+      if (!u || !u.username) continue;
+      const key = u.username.toLowerCase();
+      const existing = map.get(key);
+      if (!existing) {
         map.set(key, u);
+      } else {
+        const localTime = new Date(u.updatedAt || 0).getTime();
+        const cloudTime = new Date(existing.updatedAt || 0).getTime();
+        if (localTime >= cloudTime) {
+          map.set(key, u);
+        }
       }
     }
   }
@@ -40,7 +44,7 @@ export function mergeUserLists(localUsers: BusinessUser[], cloudUsers: BusinessU
 }
 
 export async function fetchFromCloud(): Promise<CloudPayload | null> {
-  // 1. Try primary Express API sync route first
+  // 1. Try primary Express API sync route first (when running on Cloud Run / local server)
   try {
     const res = await fetch(PRIMARY_SYNC_API, {
       method: 'GET',
@@ -53,23 +57,23 @@ export async function fetchFromCloud(): Promise<CloudPayload | null> {
       }
     }
   } catch (e) {
-    // API endpoint unavailable, try fallback
+    // API endpoint unavailable (e.g. GitHub Pages)
   }
 
-  // 2. Fallback to public KV endpoint for static GitHub Pages hosting
+  // 2. Fallback to public CORS-enabled cloud store for static GitHub Pages & mobile browsers
   try {
-    const res = await fetch(FALLBACK_KV_ENDPOINT, {
+    const res = await fetch(PUBLIC_CLOUD_OBJECT_URL, {
       method: 'GET',
       headers: { 'Accept': 'application/json' }
     });
     if (res.ok) {
-      const data: CloudPayload = await res.json();
-      if (data && Array.isArray(data.users) && data.users.length > 0) {
-        return data;
+      const json = await res.json();
+      if (json && json.data && Array.isArray(json.data.users) && json.data.users.length > 0) {
+        return json.data as CloudPayload;
       }
     }
   } catch (err) {
-    console.warn('Cloud sync fetch warning:', err);
+    console.warn('Public cloud sync fetch warning:', err);
   }
   return null;
 }
@@ -83,7 +87,7 @@ export async function pushToCloud(users: BusinessUser[], adminPassword?: string)
 
   let success = false;
 
-  // 1. Push to Express backend /api/sync
+  // 1. Push to Express backend /api/sync if available
   try {
     const res = await fetch(PRIMARY_SYNC_API, {
       method: 'POST',
@@ -97,29 +101,34 @@ export async function pushToCloud(users: BusinessUser[], adminPassword?: string)
     // Express backend not available
   }
 
-  // 2. Push to KV fallback
+  // 2. Push to public CORS-enabled cloud object for GitHub Pages & mobile sync
   try {
-    await fetch(FALLBACK_KV_ENDPOINT, {
-      method: 'POST',
+    const res = await fetch(PUBLIC_CLOUD_OBJECT_URL, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        name: 'GoReview SAAS Database',
+        data: payload
+      })
     });
-    success = true;
+    if (res.ok) {
+      success = true;
+    }
   } catch (err) {
-    // KV endpoint failed
+    console.warn('Public cloud push warning:', err);
   }
 
   return success;
 }
 
 /**
- * Perform bi-directional smart sync across mobile & desktop devices
+ * Perform bi-directional smart sync across mobile, laptop & GitHub Pages
  */
 export async function syncOnStartup(): Promise<{ users: BusinessUser[]; updated: boolean }> {
   const localUsers = getStoredUsers();
   const cloudData = await fetchFromCloud();
 
-  if (cloudData && cloudData.users && cloudData.users.length > 0) {
+  if (cloudData && Array.isArray(cloudData.users) && cloudData.users.length > 0) {
     const merged = mergeUserLists(localUsers, cloudData.users);
     saveUsers(merged);
     if (cloudData.adminPassword) {
@@ -133,4 +142,5 @@ export async function syncOnStartup(): Promise<{ users: BusinessUser[]; updated:
 
   return { users: localUsers, updated: false };
 }
+
 

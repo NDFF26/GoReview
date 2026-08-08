@@ -54,6 +54,50 @@ export const INITIAL_USERS: BusinessUser[] = [
     updatedAt: new Date().toISOString()
   },
   {
+    id: 'user_goreview',
+    username: 'goreview',
+    businessName: 'GoReview.in',
+    tagline: 'Google Review writing solution',
+    logoUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=200&auto=format&fit=crop&q=80',
+    coverUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&auto=format&fit=crop&q=80',
+    googleReviewUrl: 'https://search.google.com/local/writereview?placeid=ChIJ_goreview_in',
+    googlePlaceId: 'ChIJ_goreview_in',
+    ratingScore: 4.8,
+    reviewCount: 310,
+    phone: '+91 83203 44204',
+    whatsapp: '918320344204',
+    email: 'contact@goreview.in',
+    address: 'Ahmedabad, Gujarat, India',
+    mapUrl: 'https://maps.google.com/?q=Ahmedabad+Gujarat',
+    description: 'GoReview.in helps businesses multiply their genuine 5-star Google reviews effortlessly with smart direct landing pages and automated review tools.',
+    operatingHours: 'Mon - Sat: 09:00 AM - 08:00 PM',
+    topics: ['GoogleReview', 'Review writing'],
+    languages: ['English', 'Gujarati', 'Hindi'],
+    reviewOptions: [
+      {
+        id: 'rev_g1',
+        text: 'Superb platform for boosting 5-star Google reviews! Fast setup and awesome features.',
+        category: 'GoogleReview'
+      },
+      {
+        id: 'rev_g2',
+        text: 'Highly effective tool for client review collection. Excellent customer support!',
+        category: 'Review writing'
+      }
+    ],
+    enablePrivateFeedback: true,
+    privateFeedbackEmail: 'contact@goreview.in',
+    privateFeedbackPhone: '+91 83203 44204',
+    pageViews: 546,
+    reviewClicks: 190,
+    contactClicks: 218,
+    isDisabled: false,
+    subscriptionStartDate: '2026-08-07',
+    subscriptionExpiryDate: '2026-09-07',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
     id: 'user_velocityi2',
     username: 'velocityi2',
     businessName: 'Velocity - Igniting Innovation',

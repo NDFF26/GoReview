@@ -2,7 +2,7 @@ import { BusinessUser } from '../types/user';
 import { INITIAL_USERS } from '../data/defaultUsers';
 import { getStoredReviewDataMap, saveReviewDataMap } from './reviewData';
 import { decodeUserParam } from './urlUtils';
-import { pushToCloud } from './cloudSync';
+import { pushToCloud, mergeUserLists } from './cloudSync';
 
 const STORAGE_KEY = 'goreview_business_users_v1';
 
@@ -14,8 +14,10 @@ export function getStoredUsers(): BusinessUser[] {
       return INITIAL_USERS;
     }
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Merge with default initial users so no default clients are missing on any device
+      const merged = mergeUserLists(parsed, INITIAL_USERS);
+      return merged;
     }
     return INITIAL_USERS;
   } catch (err) {
