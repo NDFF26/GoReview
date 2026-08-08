@@ -133,34 +133,67 @@ export function getRandomReviewForTopicAndLanguage(
     return chosen;
   }
 
-  // Short 3-15 word realistic fallbacks per language (Gujlish & Hinglish)
+  // Detect if business is food / restaurant / pizza / cafe related
+  const combinedInfo = `${businessName} ${userObj?.tagline || ''} ${topic} ${userObj?.description || ''}`.toLowerCase();
+  const isFoodBusiness = /pizza|food|restaurant|cafe|bakery|dining|kitchen|burger|fries|lava|beverage|snack|biryani|hotel|dine|taste|dish|meal/i.test(combinedInfo);
+
+  // Short 3-15 word realistic fallbacks per language
   if (isGuj) {
+    if (isFoodBusiness) {
+      const gujlishFoodTemplates = [
+        `${businessName} nu food ane taste ekdam lajawab ane khub j saras chhe!`,
+        `Khub j delicious food, fast service ane top hygiene at ${businessName}.`,
+        `${businessName} ma food try karyu, khub j maza aavi. Highly recommended!`,
+        `Superb quality food, fresh ingredients ane great staff at ${businessName}.`
+      ];
+      return gujlishFoodTemplates[Math.floor(Math.random() * gujlishFoodTemplates.length)];
+    }
     const gujlishTemplates = [
-      `${businessName} ni ${topic} service and quality khub j saras chhe!`,
-      `Khub j fast and reliable ${topic} work done by ${businessName}.`,
-      `Well trained team and completely satisfying ${topic} results!`,
-      `${businessName} sathe ${topic} mate kaam karvano khub saras anubhav rahyo.`
+      `${businessName} ni ${topic || 'service'} and quality khub j saras chhe!`,
+      `Khub j fast and reliable service done by ${businessName}.`,
+      `Well trained team and completely satisfying results at ${businessName}!`,
+      `${businessName} sathe kaam karvano khub saras anubhav rahyo.`
     ];
     return gujlishTemplates[Math.floor(Math.random() * gujlishTemplates.length)];
   }
 
   if (isHin) {
+    if (isFoodBusiness) {
+      const hinglishFoodTemplates = [
+        `${businessName} ka food aur taste bahut hi lajawab hai!`,
+        `Super delicious food and very fast service at ${businessName}.`,
+        `${businessName} me khana try kiya, ekdam awesome taste aur freshness!`,
+        `Best quality food, fresh items and great atmosphere at ${businessName}.`
+      ];
+      return hinglishFoodTemplates[Math.floor(Math.random() * hinglishFoodTemplates.length)];
+    }
     const hinglishTemplates = [
-      `${businessName} ki ${topic} service aur quality bahut hi badhiya hai!`,
-      `Bahut hi fast aur trustworthy ${topic} work. Highly recommended!`,
+      `${businessName} ki ${topic || 'service'} aur quality bahut hi badhiya hai!`,
+      `Bahut hi fast aur trustworthy service. Highly recommended!`,
       `Excellent service and extremely supportive team at ${businessName}.`,
-      `${businessName} ke saath ${topic} ke liye bahut accha experience raha.`
+      `${businessName} ke saath bahut accha experience raha.`
     ];
     return hinglishTemplates[Math.floor(Math.random() * hinglishTemplates.length)];
   }
 
-  // Default English 3-15 word templates
+  // Default English templates
+  if (isFoodBusiness) {
+    const engFoodTemplates = [
+      `Delicious food, incredible taste, and super fast service at ${businessName}!`,
+      `Amazing food quality, fresh ingredients, and great ambiance!`,
+      `Extremely fresh and tasty food. Friendly staff and great value!`,
+      `Best place for food lovers! Loved the quality and quick service.`,
+      `Top-notch quality, delicious items, and fantastic service. Highly recommended!`
+    ];
+    return engFoodTemplates[Math.floor(Math.random() * engFoodTemplates.length)];
+  }
+
   const engTemplates = [
-    `Flawless quality and top notch service for ${topic}!`,
-    `Extremely fast turnaround time and reliable ${topic} work.`,
+    `Flawless quality and top notch service at ${businessName}!`,
+    `Extremely fast turnaround time and reliable work.`,
     `Highly professional team at ${businessName}. Great experience!`,
-    `Outstanding performance and component quality in ${topic}.`,
-    `Superb customer support and transparent process. Highly recommended!`
+    `Outstanding performance and service quality at ${businessName}.`,
+    `Superb service and smooth experience. Highly recommended!`
   ];
   return engTemplates[Math.floor(Math.random() * engTemplates.length)];
 }

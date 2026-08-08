@@ -2,6 +2,7 @@ import { BusinessUser } from '../types/user';
 import { INITIAL_USERS } from '../data/defaultUsers';
 import { getStoredReviewDataMap, saveReviewDataMap } from './reviewData';
 import { decodeUserParam } from './urlUtils';
+import { pushToCloud } from './cloudSync';
 
 const STORAGE_KEY = 'goreview_business_users_v1';
 
@@ -26,6 +27,8 @@ export function getStoredUsers(): BusinessUser[] {
 export function saveUsers(users: BusinessUser[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+    // Asynchronously push to cloud sync server for cross-device synchronization
+    pushToCloud(users, getAdminPassword()).catch(() => {});
   } catch (err) {
     console.error('Error saving users to storage:', err);
   }
@@ -166,7 +169,9 @@ export function getAdminPassword(): string {
 
 export function setAdminPassword(newPassword: string): void {
   try {
-    localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim());
+    const clean = newPassword.trim();
+    localStorage.setItem(ADMIN_PASSWORD_KEY, clean);
+    pushToCloud(getStoredUsers(), clean).catch(() => {});
   } catch (err) {
     console.error('Error saving admin password:', err);
   }

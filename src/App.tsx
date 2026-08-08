@@ -8,6 +8,7 @@ import {
   resetToDefaults,
   getUserByUsername
 } from './utils/storage';
+import { syncOnStartup } from './utils/cloudSync';
 import { Navbar } from './components/Navbar';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { UserEditorModal } from './components/Admin/UserEditorModal';
@@ -21,9 +22,7 @@ import { NotFoundPage } from './components/User/NotFoundPage';
 
 export default function App() {
   const [users, setUsers] = useState<BusinessUser[]>([]);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('goreview_admin_auth') === 'true';
-  });
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
 
   const getActiveLocation = () => {
     if (window.location.hash && window.location.hash.length > 1) {
@@ -47,6 +46,13 @@ export default function App() {
   useEffect(() => {
     const loaded = getStoredUsers();
     setUsers(loaded);
+
+    // Live cross-device SAAS cloud sync
+    syncOnStartup().then(({ users: syncedUsers, updated }) => {
+      if (updated && syncedUsers) {
+        setUsers(syncedUsers);
+      }
+    }).catch((err) => console.log('Sync err:', err));
 
     const handleRouteChange = () => {
       setCurrentPath(getActiveLocation());
@@ -72,12 +78,10 @@ export default function App() {
   };
 
   const handleAdminAuthSuccess = () => {
-    sessionStorage.setItem('goreview_admin_auth', 'true');
     setIsAdminAuthenticated(true);
   };
 
   const handleAdminLogout = () => {
-    sessionStorage.removeItem('goreview_admin_auth');
     setIsAdminAuthenticated(false);
   };
 

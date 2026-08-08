@@ -2,6 +2,58 @@ import { BusinessUser } from '../types/user';
 
 export const INITIAL_USERS: BusinessUser[] = [
   {
+    id: 'user_rectospizzanikol',
+    username: 'rectos-pizza-nikol',
+    businessName: "Recto's Pizza Nikol",
+    tagline: 'Pizza restaurant',
+    logoUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200&auto=format&fit=crop&q=80',
+    coverUrl: 'https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=1200&auto=format&fit=crop&q=80',
+    googleReviewUrl: 'https://search.google.com/local/writereview?placeid=ChIJ0wyzA-KHXjkRzQOAWeLaXJQ',
+    googlePlaceId: 'ChIJ0wyzA-KHXjkRzQOAWeLaXJQ',
+    ratingScore: 4.9,
+    reviewCount: 230,
+    phone: '+91 98989 89898',
+    whatsapp: '919898989898',
+    email: 'rectospizza.nikol@gmail.com',
+    address: 'Opp. Rajhans Cinema, Pujan Shopping Mall, Nikol, Ahmedabad, Gujarat 382350',
+    mapUrl: 'https://maps.google.com/?q=Recto+Pizza+Nikol+Ahmedabad',
+    description: "Gujarat’s first rectangle pizza has officially arrived in Nikol! 🍕 At Recto's Pizza Nikol, we break the mold of traditional round pizzas by serving crispy, delicious rectangle pizzas loaded with fresh ingredients and premium melted cheese. Located right opposite Rajhans Cinema in Pujan Shopping Mall, we are the ultimate hangout spot for food lovers, families, and friends. Beyond our signature square slices, our extensive menu features mouthwatering burgers, cheesy garlic bread, pastas, sizzling French fries, and rich Choco Lava cakes. Complete your meal with our refreshing mocktails, thick milkshakes, or ice-cold coffee. Whether you are catching a quick bite before a movie or looking for an affordable, delicious dining experience, Recto's Pizza delivers incredible taste in every square inch. Visit us today to experience the rectangle pizza revolution!",
+    operatingHours: 'Mon - Sun: 11:00 AM - 11:00 PM',
+    instagram: 'https://instagram.com/rectospizzanikol',
+    facebook: 'https://facebook.com/rectospizzanikol',
+    website: 'https://goreview.in/user/rectos-pizza-nikol/',
+    topics: [],
+    languages: ['English', 'Gujarati', 'Hindi'],
+    reviewOptions: [
+      {
+        id: 'rev_r1',
+        text: 'Best rectangle pizza in Nikol! Super crispy crust, extra cheese, and mouthwatering taste.',
+        category: 'Food Quality'
+      },
+      {
+        id: 'rev_r2',
+        text: 'Awesome hangout spot opposite Rajhans Cinema. Loved the cheesy garlic bread & Choco Lava cake!',
+        category: 'Ambiance'
+      },
+      {
+        id: 'rev_r3',
+        text: 'Delicious food, fast service, and great prices. Must visit with family & friends!',
+        category: 'Service'
+      }
+    ],
+    enablePrivateFeedback: true,
+    privateFeedbackEmail: 'rectospizza.nikol@gmail.com',
+    privateFeedbackPhone: '+91 98989 89898',
+    pageViews: 1250,
+    reviewClicks: 480,
+    contactClicks: 320,
+    isDisabled: false,
+    subscriptionStartDate: '2026-01-01',
+    subscriptionExpiryDate: '2027-01-01',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
     id: 'user_velocityi2',
     username: 'velocityi2',
     businessName: 'Velocity - Igniting Innovation',

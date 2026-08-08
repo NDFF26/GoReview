@@ -19,23 +19,30 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ user, isOpen, onClose 
   const currentUrl = activeTab === 'review' ? urls.reviewUrl : urls.contactUrl;
 
   useEffect(() => {
-    if (!isOpen || !canvasRef.current) return;
+    if (!isOpen) return;
 
-    QRCode.toCanvas(
-      canvasRef.current,
-      currentUrl,
-      {
-        width: 280,
-        margin: 2,
-        color: {
-          dark: '#0F172A',
-          light: '#FFFFFF'
-        }
-      },
-      (error) => {
-        if (error) console.error('QR code generation error:', error);
+    const timer = setTimeout(() => {
+      if (canvasRef.current) {
+        QRCode.toCanvas(
+          canvasRef.current,
+          currentUrl,
+          {
+            width: 280,
+            margin: 2,
+            errorCorrectionLevel: 'M',
+            color: {
+              dark: '#0F172A',
+              light: '#FFFFFF'
+            }
+          },
+          (error) => {
+            if (error) console.error('QR code generation error:', error);
+          }
+        );
       }
-    );
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, [isOpen, activeTab, currentUrl]);
 
   if (!isOpen) return null;

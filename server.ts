@@ -32,9 +32,13 @@ async function startServer() {
 Customer reviewing topic: "${topic}".
 Requested language: "${language}".
 
+BUSINESS CATEGORY ADAPTATION:
+- If this is a food, restaurant, pizza shop, cafe, or bakery business: write enthusiastic food & taste reviews focusing on freshness, delicious flavor, crust/cheese/items, hygiene, ambiance, or fast service. NEVER use corporate jargon like "transparent process" or "component quality".
+- If this is a service or professional business: focus on work quality, reliability, staff behavior, and satisfaction.
+
 STRICT LANGUAGE RULES:
-1. If requested language is "Gujarati", "Gujlish", or contains "guj": You MUST write ALL 3 reviews ONLY in GUJLISH (Gujarati language written using English/Roman Latin script, for example: "${businessName} ni ${topic} service khub j saras chhe, fast delivery chhe!"). DO NOT write in English!
-2. If requested language is "Hindi", "Hinglish", or contains "hin": You MUST write ALL 3 reviews ONLY in HINGLISH (Hindi language written using English/Roman Latin script, for example: "${businessName} ki ${topic} service bahut badhiya hai, highly recommended!"). DO NOT write in English!
+1. If requested language is "Gujarati", "Gujlish", or contains "guj": You MUST write ALL 3 reviews ONLY in GUJLISH (Gujarati language written using English/Roman Latin script, for example: "${businessName} nu food/service khub j saras chhe, fast delivery chhe!"). DO NOT write in English!
+2. If requested language is "Hindi", "Hinglish", or contains "hin": You MUST write ALL 3 reviews ONLY in HINGLISH (Hindi language written using English/Roman Latin script, for example: "${businessName} ka food/service bahut badhiya hai, highly recommended!"). DO NOT write in English!
 3. If requested language is "English": Write in standard natural English.
 
 STRICT REQUIREMENT: Each review line MUST be concise, between 3 and 15 words long, natural and enthusiastic.

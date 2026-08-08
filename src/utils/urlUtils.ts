@@ -18,6 +18,7 @@ export function getAppBaseUrl(): string {
 
 export function encodeUserParam(user: BusinessUser): string {
   try {
+    // Compact representation to prevent overly long QR URLs
     const compact = {
       id: user.id,
       u: user.username,
@@ -28,23 +29,7 @@ export function encodeUserParam(user: BusinessUser): string {
       w: user.whatsapp || user.phone || '',
       e: user.email || '',
       a: user.address || '',
-      m: user.mapUrl || '',
-      d: user.description || '',
-      h: user.operatingHours || '',
       lg: user.logoUrl || '',
-      cv: user.coverUrl || '',
-      ig: user.instagram || '',
-      fb: user.facebook || '',
-      wb: user.website || '',
-      yt: user.youtube || '',
-      tw: user.twitter || '',
-      li: user.linkedin || '',
-      tp: user.topics || [],
-      lan: user.languages || [],
-      ro: user.reviewOptions || [],
-      pf: !!user.enablePrivateFeedback,
-      pfe: user.privateFeedbackEmail || '',
-      pfp: user.privateFeedbackPhone || '',
       dis: !!user.isDisabled
     };
     const jsonStr = JSON.stringify(compact);
@@ -72,26 +57,13 @@ export function decodeUserParam(paramStr: string): Partial<BusinessUser> | null 
       whatsapp: compact.w || compact.p || '',
       email: compact.e || '',
       address: compact.a || '',
-      mapUrl: compact.m || '',
-      description: compact.d || '',
-      operatingHours: compact.h || '',
       logoUrl: compact.lg || '',
-      coverUrl: compact.cv || '',
-      instagram: compact.ig || '',
-      facebook: compact.fb || '',
-      website: compact.wb || '',
-      youtube: compact.yt || '',
-      twitter: compact.tw || '',
-      linkedin: compact.li || '',
-      topics: compact.tp || [],
-      languages: compact.lan || ['English'],
-      reviewOptions: compact.ro || [],
-      enablePrivateFeedback: !!compact.pf,
-      privateFeedbackEmail: compact.pfe || '',
-      privateFeedbackPhone: compact.pfp || '',
-      pageViews: 0,
-      reviewClicks: 0,
-      contactClicks: 0,
+      languages: ['English', 'Gujarati', 'Hindi'],
+      reviewOptions: [
+        { id: '1', text: 'Outstanding food, fast service, and great experience!', category: 'General' },
+        { id: '2', text: 'Highly recommended! Superb quality and friendly staff.', category: 'Service' }
+      ],
+      enablePrivateFeedback: true,
       isDisabled: !!compact.dis,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -102,26 +74,25 @@ export function decodeUserParam(paramStr: string): Partial<BusinessUser> | null 
   }
 }
 
-export function getUserFullUrls(userOrUsername: BusinessUser | string) {
+export function getUserFullUrls(userOrUsername: BusinessUser | string, attachPayload: boolean = false) {
   const baseUrl = getAppBaseUrl();
   const isObject = typeof userOrUsername === 'object' && userOrUsername !== null;
   const usernameStr = isObject ? userOrUsername.username : (userOrUsername as string);
   const clean = (usernameStr || '').trim().toLowerCase();
 
   let encodedQuery = '';
-  if (isObject) {
+  if (isObject && attachPayload) {
     const encoded = encodeUserParam(userOrUsername);
     if (encoded) {
       encodedQuery = `?p=${encoded}`;
     }
   }
 
-  // Hash-based routes guarantee instant loading on GitHub Pages static hosting
-  // e.g. https://ndff26.github.io/GoReview/#/user/rectos-pizza-nikol?p=...
+  // Clean, high-performance hash-based routes for GitHub Pages & QR code scanning
+  // e.g. https://ndff26.github.io/GoReview/#/user/rectos-pizza-nikol
   const reviewUrlHash = `${baseUrl}/#/user/${clean}${encodedQuery}`;
   const contactUrlHash = `${baseUrl}/#/user/${clean}/contact${encodedQuery}`;
 
-  // Standard path-based routes
   const reviewUrlPath = `${baseUrl}/user/${clean}${encodedQuery}`;
   const contactUrlPath = `${baseUrl}/user/${clean}/contact${encodedQuery}`;
 

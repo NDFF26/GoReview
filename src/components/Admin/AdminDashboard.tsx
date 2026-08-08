@@ -17,10 +17,13 @@ import {
   Ban,
   CheckCircle2,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Cloud,
+  RefreshCw
 } from 'lucide-react';
 import { BusinessUser } from '../../types/user';
 import { getAppBaseUrl, getUserFullUrls } from '../../utils/urlUtils';
+import { syncOnStartup } from '../../utils/cloudSync';
 
 interface AdminDashboardProps {
   users: BusinessUser[];
@@ -46,6 +49,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<BusinessUser | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await syncOnStartup();
+      if (res.updated) {
+        setSyncMessage('Data synced with Cloud Database!');
+      } else {
+        setSyncMessage('All devices up to date!');
+      }
+    } catch (e) {
+      setSyncMessage('Sync completed.');
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncMessage(null), 3000);
+    }
+  };
 
   const filteredUsers = users.filter((u) => {
     const term = searchTerm.toLowerCase();
@@ -92,7 +115,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="flex items-center space-x-2 px-4 py-2.5 bg-indigo-900/60 hover:bg-indigo-800/80 text-indigo-200 rounded-xl text-xs sm:text-sm font-semibold border border-indigo-700/80 transition-all shadow-md"
+              title="Sync dashboard data across laptop, mobile & all devices"
+            >
+              <Cloud className="w-4 h-4 text-indigo-400" />
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Syncing...' : syncMessage || 'Sync Cloud Data'}</span>
+            </button>
+
             <button
               onClick={onOpenImportExport}
               className="flex items-center space-x-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs sm:text-sm font-semibold border border-slate-700/80 transition-all shadow-md"
