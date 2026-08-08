@@ -1,8 +1,8 @@
 import { BusinessUser } from '../types/user';
 import { INITIAL_USERS } from '../data/defaultUsers';
-import { getStoredReviewDataMap, saveReviewDataMap } from './reviewData';
+import { getStoredReviewDataMap, saveReviewDataMap, clearStoredReviewDataMap } from './reviewData';
 import { decodeUserParam } from './urlUtils';
-import { pushToCloud, mergeUserLists } from './cloudSync';
+import { pushToCloud, mergeUserLists, wipeCloudStore } from './cloudSync';
 
 const STORAGE_KEY = 'goreview_business_users_v1';
 const DELETED_USERNAMES_KEY = 'goreview_deleted_usernames_v1';
@@ -81,8 +81,24 @@ export function saveUsers(users: BusinessUser[]): void {
         !deleted.includes(String(u.id).toLowerCase())
     );
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanUsers));
+
+    // Also sync review topics map for each user into reviewDataMap
+    const reviewMap = getStoredReviewDataMap();
+    cleanUsers.forEach((u) => {
+      if (u && u.username) {
+        const uName = String(u.username).trim().toLowerCase();
+        reviewMap[uName] = {
+          businessName: u.businessName || '',
+          topics: u.topics || [],
+          languages: u.languages || ['English', 'Gujarati', 'Hindi'],
+          reviews: reviewMap[uName]?.reviews || {}
+        };
+      }
+    });
+    saveReviewDataMap(reviewMap);
+
     // Asynchronously push to cloud sync server for cross-device synchronization
-    pushToCloud(cleanUsers, getAdminPassword(), deleted).catch(() => {});
+    pushToCloud(cleanUsers, getAdminPassword(), deleted, reviewMap).catch(() => {});
   } catch (err) {
     console.error('Error saving users to storage:', err);
   }
@@ -244,5 +260,52 @@ export function checkAdminPassword(input: string): boolean {
   const stored = getAdminPassword();
   const clean = input.trim();
   return clean === stored;
+}
+
+export function wipeAllDataAndDatabase(password: string): { success: boolean; message: string } {
+  if (!checkAdminPassword(password)) {
+    return { success: false, message: 'Incorrect Admin Password! Wipe operation cancelled.' };
+  }
+
+  // 1. Gather all existing usernames to place on deleted list
+  const currentUsers = getStoredUsers();
+  const allUsernames = new Set<string>();
+
+  currentUsers.forEach((u) => {
+    if (u.id) allUsernames.add(u.id.toLowerCase());
+    if (u.username) allUsernames.add(u.username.toLowerCase());
+  });
+
+  INITIAL_USERS.forEach((u) => {
+    if (u.id) allUsernames.add(u.id.toLowerCase());
+    if (u.username) allUsernames.add(u.username.toLowerCase());
+  });
+
+  try {
+    const reviewMap = getStoredReviewDataMap();
+    Object.keys(reviewMap).forEach((k) => allUsernames.add(k.toLowerCase()));
+  } catch (e) {
+    // Ignore map read errors
+  }
+
+  const deletedList = Array.from(allUsernames);
+
+  // 2. Clear Local Storage
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    localStorage.setItem(DELETED_USERNAMES_KEY, JSON.stringify(deletedList));
+  } catch (e) {
+    console.error('Error clearing local storage users:', e);
+  }
+
+  // 3. Clear review data map in local storage
+  clearStoredReviewDataMap();
+
+  // 4. Wipe cloud store & database
+  wipeCloudStore(getAdminPassword(), deletedList).catch((err) =>
+    console.error('Failed to wipe cloud store:', err)
+  );
+
+  return { success: true, message: 'All users and database data cleared successfully!' };
 }
 

@@ -24,6 +24,7 @@ import {
 import { BusinessUser } from '../../types/user';
 import { getAppBaseUrl, getUserFullUrls } from '../../utils/urlUtils';
 import { syncOnStartup } from '../../utils/cloudSync';
+import { wipeAllDataAndDatabase } from '../../utils/storage';
 
 interface AdminDashboardProps {
   users: BusinessUser[];
@@ -34,6 +35,7 @@ interface AdminDashboardProps {
   onOpenQRModal: (user: BusinessUser) => void;
   onOpenImportExport: () => void;
   onNavigate: (path: string) => void;
+  onWipeAllSuccess?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -44,13 +46,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onToggleDisableUser,
   onOpenQRModal,
   onOpenImportExport,
-  onNavigate
+  onNavigate,
+  onWipeAllSuccess
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<BusinessUser | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  // Wipe All state
+  const [wipeModalOpen, setWipeModalOpen] = useState(false);
+  const [wipePassword, setWipePassword] = useState('');
+  const [wipeError, setWipeError] = useState<string | null>(null);
+  const [isWiping, setIsWiping] = useState(false);
+
+  const handleConfirmWipe = (e: React.FormEvent) => {
+    e.preventDefault();
+    setWipeError(null);
+    if (!wipePassword) {
+      setWipeError('Please enter the Admin Password.');
+      return;
+    }
+    setIsWiping(true);
+    try {
+      const res = wipeAllDataAndDatabase(wipePassword);
+      if (res.success) {
+        if (onWipeAllSuccess) onWipeAllSuccess();
+        setWipeModalOpen(false);
+        setWipePassword('');
+        setSyncMessage('All users & database cleared!');
+        setTimeout(() => setSyncMessage(null), 4000);
+      } else {
+        setWipeError(res.message);
+      }
+    } catch (err: any) {
+      setWipeError(err.message || 'Failed to wipe data.');
+    } finally {
+      setIsWiping(false);
+    }
+  };
 
   const handleManualSync = async () => {
     setIsSyncing(true);
@@ -133,6 +168,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Download className="w-4 h-4" />
               <span>Backup / Import</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setWipePassword('');
+                setWipeError(null);
+                setWipeModalOpen(true);
+              }}
+              className="flex items-center space-x-2 px-4 py-2.5 bg-red-950/80 hover:bg-red-900 text-red-200 rounded-xl text-xs sm:text-sm font-semibold border border-red-700/80 transition-all shadow-md"
+              title="Clear all users, profiles, and database records"
+            >
+              <Trash2 className="w-4 h-4 text-red-400" />
+              <span>Clear All Data</span>
             </button>
 
             <button
@@ -481,6 +529,67 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 Yes, Delete Client
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wipe / Clear All Data Confirmation Modal */}
+      {wipeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-7 relative border border-slate-200">
+            <div className="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xs">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+
+            <h3 className="text-xl font-extrabold text-slate-900 text-center mb-2">Clear All Data & Database?</h3>
+            <p className="text-xs text-slate-600 leading-relaxed text-center mb-5">
+              <strong>Warning:</strong> This will permanently delete <strong>ALL client accounts ({users.length})</strong>, review topics, custom ratings, analytics, and wipe all database records across all connected devices.
+            </p>
+
+            <form onSubmit={handleConfirmWipe} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Enter Admin Password to Authorize:
+                </label>
+                <input
+                  type="password"
+                  value={wipePassword}
+                  onChange={(e) => setWipePassword(e.target.value)}
+                  placeholder="Enter admin password..."
+                  required
+                  autoFocus
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white text-slate-900"
+                />
+              </div>
+
+              {wipeError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold flex items-center space-x-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-red-500" />
+                  <span>{wipeError}</span>
+                </div>
+              )}
+
+              <div className="flex items-center space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWipeModalOpen(false);
+                    setWipeError(null);
+                  }}
+                  className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isWiping}
+                  className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-red-200 transition-all active:scale-95 flex items-center justify-center space-x-2"
+                >
+                  <Trash2 className="w-4 h-4 text-white" />
+                  <span>{isWiping ? 'Wiping...' : 'Clear Everything'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -224,6 +224,7 @@ export default function App() {
               }}
               onOpenImportExport={() => setImportModalOpen(true)}
               onNavigate={navigateTo}
+              onWipeAllSuccess={() => setUsers([])}
             />
           )
         )}

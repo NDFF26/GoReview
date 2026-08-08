@@ -1,4 +1,4 @@
-import { BusinessUser } from '../types/user';
+import { BusinessUser, BusinessReviewDataMap } from '../types/user';
 import {
   getStoredUsers,
   saveUsers,
@@ -7,6 +7,8 @@ import {
   getDeletedUsernames,
   addDeletedUsername
 } from './storage';
+import { getStoredReviewDataMap, saveReviewDataMap } from './reviewData';
+import defaultReviewsMap from '../data/defaultReviews.json';
 
 const PRIMARY_SYNC_API = '/api/sync';
 const PUBLIC_CLOUD_OBJECT_URL = 'https://api.restful-api.dev/objects/ff8081819f7e10ae019fe14562b7114c';
@@ -14,6 +16,7 @@ const PUBLIC_CLOUD_OBJECT_URL = 'https://api.restful-api.dev/objects/ff8081819f7
 export interface CloudPayload {
   users: BusinessUser[];
   deletedUsernames?: string[];
+  reviewDataMap?: BusinessReviewDataMap;
   adminPassword?: string;
   updatedAt: string;
 }
@@ -64,6 +67,48 @@ export function mergeUserLists(
   return Array.from(map.values());
 }
 
+export function mergeReviewDataMaps(
+  localMap: BusinessReviewDataMap = {},
+  cloudMap: BusinessReviewDataMap = {},
+  deletedUsernames: string[] = []
+): BusinessReviewDataMap {
+  const deletedSet = new Set(deletedUsernames.map((d) => String(d).trim().toLowerCase()));
+  const resultMap: BusinessReviewDataMap = { ...(defaultReviewsMap as BusinessReviewDataMap), ...localMap, ...cloudMap };
+
+  const allKeys = new Set([...Object.keys(localMap || {}), ...Object.keys(cloudMap || {})]);
+  for (const key of allKeys) {
+    const kLower = key.toLowerCase();
+    if (deletedSet.has(kLower)) {
+      delete resultMap[key];
+      delete resultMap[kLower];
+      continue;
+    }
+
+    const localEntry = localMap[key] || localMap[kLower];
+    const cloudEntry = cloudMap[key] || cloudMap[kLower];
+
+    if (localEntry && cloudEntry) {
+      resultMap[key] = {
+        businessName: cloudEntry.businessName || localEntry.businessName || '',
+        topics: Array.from(new Set([...(localEntry.topics || []), ...(cloudEntry.topics || [])])),
+        languages: Array.from(new Set([...(localEntry.languages || []), ...(cloudEntry.languages || [])])),
+        reviews: { ...(localEntry.reviews || {}), ...(cloudEntry.reviews || {}) }
+      };
+    } else if (cloudEntry) {
+      resultMap[key] = cloudEntry;
+    } else if (localEntry) {
+      resultMap[key] = localEntry;
+    }
+  }
+
+  // Remove deleted keys
+  for (const d of deletedSet) {
+    delete resultMap[d];
+  }
+
+  return resultMap;
+}
+
 export async function fetchFromCloud(): Promise<CloudPayload | null> {
   // 1. Try primary Express API sync route first (when running on Cloud Run / local server)
   try {
@@ -102,12 +147,16 @@ export async function fetchFromCloud(): Promise<CloudPayload | null> {
 export async function pushToCloud(
   users: BusinessUser[],
   adminPassword?: string,
-  deletedUsernames?: string[]
+  deletedUsernames?: string[],
+  reviewDataMap?: BusinessReviewDataMap
 ): Promise<boolean> {
   const deleted = deletedUsernames || getDeletedUsernames();
+  const currentReviewMap = reviewDataMap || getStoredReviewDataMap();
+
   const payload: CloudPayload = {
     users,
     deletedUsernames: deleted,
+    reviewDataMap: currentReviewMap,
     adminPassword: adminPassword || getAdminPassword(),
     updatedAt: new Date().toISOString()
   };
@@ -148,12 +197,51 @@ export async function pushToCloud(
   return success;
 }
 
+export async function wipeCloudStore(adminPassword: string, deletedUsernames: string[]): Promise<boolean> {
+  const payload: CloudPayload = {
+    users: [],
+    deletedUsernames,
+    reviewDataMap: {},
+    adminPassword,
+    updatedAt: new Date().toISOString()
+  };
+
+  let success = false;
+
+  // 1. Send clear to Express backend server
+  try {
+    const res = await fetch('/api/sync/clear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminPassword, deletedUsernames, isWipe: true })
+    });
+    if (res.ok) success = true;
+  } catch (e) {
+    console.error('Failed to clear Express sync API:', e);
+  }
+
+  // 2. Send empty payload to Public Cloud JSON Store
+  try {
+    const cloudRes = await fetch(PUBLIC_CLOUD_OBJECT_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'GoReview_Global_Sync_Object', data: payload })
+    });
+    if (cloudRes.ok) success = true;
+  } catch (e) {
+    console.error('Failed to clear Public Cloud Object:', e);
+  }
+
+  return success;
+}
+
 /**
  * Perform bi-directional smart sync across mobile, laptop & GitHub Pages
  */
 export async function syncOnStartup(): Promise<{ users: BusinessUser[]; updated: boolean }> {
   const localUsers = getStoredUsers();
   const localDeleted = getDeletedUsernames();
+  const localReviewMap = getStoredReviewDataMap();
   const cloudData = await fetchFromCloud();
 
   if (cloudData && Array.isArray(cloudData.users)) {
@@ -165,17 +253,36 @@ export async function syncOnStartup(): Promise<{ users: BusinessUser[]; updated:
     // Save combined deleted list locally
     combinedDeleted.forEach((d) => addDeletedUsername(d));
 
-    const merged = mergeUserLists(localUsers, cloudData.users, combinedDeleted);
-    saveUsers(merged);
+    const mergedUsers = mergeUserLists(localUsers, cloudData.users, combinedDeleted);
+    saveUsers(mergedUsers);
+
+    // Merge reviewDataMap
+    const cloudReviewMap = cloudData.reviewDataMap || {};
+    const mergedReviewMap = mergeReviewDataMaps(localReviewMap, cloudReviewMap, combinedDeleted);
+
+    // Ensure all merged users have their topics and languages populated in reviewMap
+    mergedUsers.forEach((u) => {
+      if (u && u.username) {
+        const uName = String(u.username).trim().toLowerCase();
+        mergedReviewMap[uName] = {
+          businessName: u.businessName || '',
+          topics: u.topics || [],
+          languages: u.languages || ['English', 'Gujarati', 'Hindi'],
+          reviews: mergedReviewMap[uName]?.reviews || {}
+        };
+      }
+    });
+
+    saveReviewDataMap(mergedReviewMap);
 
     if (cloudData.adminPassword) {
       setAdminPassword(cloudData.adminPassword);
     }
 
-    pushToCloud(merged, cloudData.adminPassword, combinedDeleted).catch(() => {});
-    return { users: merged, updated: true };
+    pushToCloud(mergedUsers, cloudData.adminPassword, combinedDeleted, mergedReviewMap).catch(() => {});
+    return { users: mergedUsers, updated: true };
   } else if (localUsers && localUsers.length > 0) {
-    pushToCloud(localUsers, getAdminPassword(), localDeleted).catch(() => {});
+    pushToCloud(localUsers, getAdminPassword(), localDeleted, localReviewMap).catch(() => {});
   }
 
   return { users: localUsers, updated: false };

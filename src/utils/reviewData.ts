@@ -26,6 +26,14 @@ export function saveReviewDataMap(map: BusinessReviewDataMap): void {
   }
 }
 
+export function clearStoredReviewDataMap(): void {
+  try {
+    localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify({}));
+  } catch (e) {
+    console.error('Failed to clear review data map:', e);
+  }
+}
+
 export function getBusinessTopicsAndLanguages(userOrUsername: BusinessUser | string) {
   let userObj: BusinessUser | undefined;
   let username = '';

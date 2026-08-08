@@ -11,7 +11,13 @@ async function startServer() {
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // In-memory global store on the backend server for instant cross-device SAAS sync
-  let serverSyncStore: { users: any[]; deletedUsernames?: string[]; adminPassword?: string; updatedAt: string } | null = null;
+  let serverSyncStore: {
+    users: any[];
+    deletedUsernames?: string[];
+    reviewDataMap?: any;
+    adminPassword?: string;
+    updatedAt: string;
+  } | null = null;
 
   app.get("/api/sync", (req, res) => {
     if (!serverSyncStore) {
@@ -20,9 +26,25 @@ async function startServer() {
     res.json(serverSyncStore);
   });
 
+  app.post("/api/sync/clear", (req, res) => {
+    try {
+      const { adminPassword, deletedUsernames } = req.body;
+      serverSyncStore = {
+        users: [],
+        deletedUsernames: Array.isArray(deletedUsernames) ? deletedUsernames : [],
+        reviewDataMap: {},
+        adminPassword: adminPassword || serverSyncStore?.adminPassword || 'admin',
+        updatedAt: new Date().toISOString()
+      };
+      res.json({ success: true, store: serverSyncStore });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message || "Failed to clear sync store" });
+    }
+  });
+
   app.post("/api/sync", (req, res) => {
     try {
-      const { users, deletedUsernames, adminPassword, updatedAt } = req.body;
+      const { users, deletedUsernames, reviewDataMap, adminPassword, updatedAt } = req.body;
       if (!Array.isArray(users)) {
         return res.status(400).json({ error: "Invalid users array" });
       }
@@ -67,9 +89,32 @@ async function startServer() {
       }
 
       const mergedUsers = Array.from(userMap.values());
+
+      // Merge reviewDataMap
+      const currentReviewMap = serverSyncStore?.reviewDataMap || {};
+      const incomingReviewMap = reviewDataMap || {};
+      const mergedReviewMap = { ...currentReviewMap, ...incomingReviewMap };
+
+      for (const d of combinedDeleted) {
+        delete mergedReviewMap[d];
+      }
+
+      mergedUsers.forEach((u) => {
+        if (u && u.username) {
+          const uName = String(u.username).trim().toLowerCase();
+          mergedReviewMap[uName] = {
+            businessName: u.businessName || '',
+            topics: Array.isArray(u.topics) ? u.topics : [],
+            languages: Array.isArray(u.languages) ? u.languages : ['English', 'Gujarati', 'Hindi'],
+            reviews: mergedReviewMap[uName]?.reviews || {}
+          };
+        }
+      });
+
       serverSyncStore = {
         users: mergedUsers,
         deletedUsernames: combinedDeleted,
+        reviewDataMap: mergedReviewMap,
         adminPassword: adminPassword || serverSyncStore?.adminPassword || 'admin',
         updatedAt: updatedAt || new Date().toISOString()
       };
