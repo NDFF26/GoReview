@@ -7,7 +7,64 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+  // In-memory global store on the backend server for instant cross-device SAAS sync
+  let serverSyncStore: { users: any[]; adminPassword?: string; updatedAt: string } | null = null;
+
+  app.get("/api/sync", (req, res) => {
+    if (!serverSyncStore) {
+      return res.status(404).json({ error: "No server sync state stored yet." });
+    }
+    res.json(serverSyncStore);
+  });
+
+  app.post("/api/sync", (req, res) => {
+    try {
+      const { users, adminPassword, updatedAt } = req.body;
+      if (!Array.isArray(users)) {
+        return res.status(400).json({ error: "Invalid users array" });
+      }
+
+      // Merge incoming users with server store
+      const currentUsers = serverSyncStore?.users || [];
+      const userMap = new Map<string, any>();
+
+      for (const u of currentUsers) {
+        if (u && u.username) {
+          userMap.set(u.username.toLowerCase(), u);
+        }
+      }
+
+      for (const u of users) {
+        if (!u || !u.username) continue;
+        const key = u.username.toLowerCase();
+        const existing = userMap.get(key);
+        if (!existing) {
+          userMap.set(key, u);
+        } else {
+          const incomingTime = new Date(u.updatedAt || 0).getTime();
+          const existingTime = new Date(existing.updatedAt || 0).getTime();
+          if (incomingTime >= existingTime) {
+            userMap.set(key, u);
+          }
+        }
+      }
+
+      const mergedUsers = Array.from(userMap.values());
+      serverSyncStore = {
+        users: mergedUsers,
+        adminPassword: adminPassword || serverSyncStore?.adminPassword || 'admin',
+        updatedAt: updatedAt || new Date().toISOString()
+      };
+
+      res.json(serverSyncStore);
+    } catch (err: any) {
+      console.error("Sync API error:", err);
+      res.status(500).json({ error: err.message || "Failed to update sync store" });
+    }
+  });
 
   // Initialize Gemini AI SDK
   const ai = new GoogleGenAI({

@@ -47,12 +47,19 @@ export default function App() {
     const loaded = getStoredUsers();
     setUsers(loaded);
 
-    // Live cross-device SAAS cloud sync
-    syncOnStartup().then(({ users: syncedUsers, updated }) => {
-      if (updated && syncedUsers) {
-        setUsers(syncedUsers);
-      }
-    }).catch((err) => console.log('Sync err:', err));
+    const doSync = () => {
+      syncOnStartup().then(({ users: syncedUsers, updated }) => {
+        if (updated && syncedUsers) {
+          setUsers(syncedUsers);
+        }
+      }).catch((err) => console.log('Sync err:', err));
+    };
+
+    doSync();
+
+    // Auto-sync every 8 seconds and when window/tab regains focus
+    const interval = setInterval(doSync, 8000);
+    window.addEventListener('focus', doSync);
 
     const handleRouteChange = () => {
       setCurrentPath(getActiveLocation());
@@ -61,6 +68,8 @@ export default function App() {
     window.addEventListener('popstate', handleRouteChange);
     window.addEventListener('hashchange', handleRouteChange);
     return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', doSync);
       window.removeEventListener('popstate', handleRouteChange);
       window.removeEventListener('hashchange', handleRouteChange);
     };
