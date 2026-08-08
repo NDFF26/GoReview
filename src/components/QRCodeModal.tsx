@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { QrCode, Download, ExternalLink, X, Copy, Check, Sparkles } from 'lucide-react';
 import { BusinessUser } from '../types/user';
+import { getUserFullUrls } from '../utils/urlUtils';
 
 interface QRCodeModalProps {
   user: BusinessUser;
@@ -14,11 +15,8 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ user, isOpen, onClose 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
-  const baseUrl = window.location.origin;
-  const reviewUrl = `${baseUrl}/user/${user.username}`;
-  const contactUrl = `${baseUrl}/user/${user.username}/contact`;
-
-  const currentUrl = activeTab === 'review' ? reviewUrl : contactUrl;
+  const urls = getUserFullUrls(user.username);
+  const currentUrl = activeTab === 'review' ? urls.reviewUrl : urls.contactUrl;
 
   useEffect(() => {
     if (!isOpen || !canvasRef.current) return;

@@ -20,6 +20,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { BusinessUser } from '../../types/user';
+import { getAppBaseUrl, getUserFullUrls } from '../../utils/urlUtils';
 
 interface AdminDashboardProps {
   users: BusinessUser[];
@@ -70,7 +71,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const baseUrl = window.location.origin;
+  const baseUrl = getAppBaseUrl();
 
   return (
     <div className="min-h-screen bg-slate-50/60 pb-16">
@@ -206,10 +207,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredUsers.map((u) => {
+              const userUrls = getUserFullUrls(u.username);
               const reviewPath = `/user/${u.username}`;
               const contactPath = `/user/${u.username}/contact`;
-              const fullReviewUrl = `${baseUrl}${reviewPath}`;
-              const fullContactUrl = `${baseUrl}${contactPath}`;
+              const fullReviewUrl = userUrls.reviewUrl;
+              const fullContactUrl = userUrls.contactUrl;
 
               const isExpired = u.subscriptionExpiryDate ? new Date() > new Date(u.subscriptionExpiryDate) : false;
               const isDisabled = !!u.isDisabled;
