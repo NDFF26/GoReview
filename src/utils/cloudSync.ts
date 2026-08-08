@@ -134,8 +134,25 @@ export function mergeReviewDataMaps(
   return resultMap;
 }
 
+import { fetchFromFirestore, pushToFirestore, wipeFirestore } from './firebaseSync';
+
 export async function fetchFromCloud(): Promise<CloudPayload | null> {
-  // 1. Try primary Express API sync route first (when running on Cloud Run / local server)
+  // 1. Try Firebase Firestore first for real-time multi-device cloud database
+  try {
+    const fsData = await fetchFromFirestore();
+    if (fsData && Array.isArray(fsData.users) && fsData.users.length > 0) {
+      return {
+        users: fsData.users,
+        deletedUsernames: fsData.deletedUsernames,
+        reviewDataMap: fsData.reviewDataMap,
+        updatedAt: new Date().toISOString()
+      };
+    }
+  } catch (e) {
+    console.warn('Firebase Firestore fetch error:', e);
+  }
+
+  // 2. Try primary Express API sync route next
   try {
     const res = await fetch(PRIMARY_SYNC_API, {
       method: 'GET',
@@ -151,7 +168,7 @@ export async function fetchFromCloud(): Promise<CloudPayload | null> {
     // API endpoint unavailable (e.g. GitHub Pages)
   }
 
-  // 2. Fallback to public CORS-enabled cloud store for static GitHub Pages & mobile browsers
+  // 3. Fallback to public CORS-enabled cloud store for static GitHub Pages & mobile browsers
   try {
     const res = await fetch(PUBLIC_CLOUD_OBJECT_URL, {
       method: 'GET',
@@ -188,7 +205,15 @@ export async function pushToCloud(
 
   let success = false;
 
-  // 1. Push to Express backend /api/sync if available
+  // 1. Push to Firebase Firestore
+  try {
+    const fsOk = await pushToFirestore(users, deleted, currentReviewMap);
+    if (fsOk) success = true;
+  } catch (e) {
+    console.error('Firebase Firestore push error:', e);
+  }
+
+  // 2. Push to Express backend /api/sync if available
   try {
     const res = await fetch(PRIMARY_SYNC_API, {
       method: 'POST',
@@ -202,7 +227,7 @@ export async function pushToCloud(
     // Express backend not available
   }
 
-  // 2. Push to public CORS-enabled cloud object for GitHub Pages & mobile sync
+  // 3. Push to public CORS-enabled cloud object for GitHub Pages & mobile sync
   try {
     const res = await fetch(PUBLIC_CLOUD_OBJECT_URL, {
       method: 'PUT',
@@ -233,7 +258,15 @@ export async function wipeCloudStore(adminPassword: string, deletedUsernames: st
 
   let success = false;
 
-  // 1. Send clear to Express backend server
+  // 1. Wipe Firebase Firestore
+  try {
+    const fsWipe = await wipeFirestore(deletedUsernames);
+    if (fsWipe) success = true;
+  } catch (e) {
+    console.error('Failed to wipe Firestore:', e);
+  }
+
+  // 2. Send clear to Express backend server
   try {
     const res = await fetch('/api/sync/clear', {
       method: 'POST',
@@ -245,7 +278,7 @@ export async function wipeCloudStore(adminPassword: string, deletedUsernames: st
     console.error('Failed to clear Express sync API:', e);
   }
 
-  // 2. Send empty payload to Public Cloud JSON Store
+  // 3. Send empty payload to Public Cloud JSON Store
   try {
     const cloudRes = await fetch(PUBLIC_CLOUD_OBJECT_URL, {
       method: 'PUT',

@@ -9,6 +9,7 @@ import {
   getUserByUsername
 } from './utils/storage';
 import { syncOnStartup } from './utils/cloudSync';
+import { subscribeToFirestore } from './utils/firebaseSync';
 import { Navbar } from './components/Navbar';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { UserEditorModal } from './components/Admin/UserEditorModal';
@@ -62,6 +63,14 @@ export default function App() {
 
     doSync();
 
+    // Real-time Firebase Firestore synchronization across all connected devices
+    const unsubscribeFirebase = subscribeToFirestore(({ users: fsUsers }) => {
+      if (fsUsers && fsUsers.length > 0) {
+        setUsers(fsUsers);
+      }
+      setIsSyncDone(true);
+    });
+
     // Auto-sync every 8 seconds and when window/tab regains focus
     const interval = setInterval(doSync, 8000);
     window.addEventListener('focus', doSync);
@@ -73,6 +82,7 @@ export default function App() {
     window.addEventListener('popstate', handleRouteChange);
     window.addEventListener('hashchange', handleRouteChange);
     return () => {
+      unsubscribeFirebase();
       clearInterval(interval);
       window.removeEventListener('focus', doSync);
       window.removeEventListener('popstate', handleRouteChange);

@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "users": {
+      "title": "Business Users",
+      "description": "Stores registered business profiles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "username": { "type": "string" },
+        "googleReviewUrl": { "type": "string" },
+        "disabled": { "type": "boolean" },
+        "activeTopics": { "type": "array", "items": { "type": "string" } },
+        "topicLanguages": { "type": "array", "items": { "type": "string" } },
+        "minRatingToDirect": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "username", "googleReviewUrl"]
+    },
+    "review_data": {
+      "title": "Review Data Maps",
+      "description": "Stores review topics, custom ratings, and settings per business username",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "data": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["username"]
+    },
+    "app_settings": {
+      "title": "App Settings & Sync Metadata",
+      "description": "Stores deleted usernames and sync state",
+      "type": "object",
+      "properties": {
+        "deletedUsernames": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string" }
+      }
+    }
+  }
+}
