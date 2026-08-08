@@ -49,11 +49,23 @@ async function startServer() {
         return res.status(400).json({ error: "Invalid users array" });
       }
 
+      // Collect all active identifiers explicitly supplied in incoming payload
+      const incomingActive = new Set<string>();
+      users.forEach((u) => {
+        if (u) {
+          if (u.id) incomingActive.add(String(u.id).trim().toLowerCase());
+          if (u.username) incomingActive.add(String(u.username).trim().toLowerCase());
+        }
+      });
+
       const currentDeleted = serverSyncStore?.deletedUsernames || [];
       const incomingDeleted = Array.isArray(deletedUsernames) ? deletedUsernames : [];
+      
+      // Combine deleted, BUT filter out any username/ID that is in incomingActive!
       const combinedDeleted = Array.from(
         new Set([...currentDeleted, ...incomingDeleted].map((s) => String(s).trim().toLowerCase()))
-      );
+      ).filter((d) => !incomingActive.has(d));
+
       const deletedSet = new Set(combinedDeleted);
 
       // Merge incoming users with server store
@@ -73,9 +85,8 @@ async function startServer() {
       for (const u of users) {
         if (!u || !u.username) continue;
         const uName = String(u.username).trim().toLowerCase();
-        const uId = String(u.id || '').trim().toLowerCase();
-        if (deletedSet.has(uName) || deletedSet.has(uId)) continue;
-
+        
+        // Incoming active user overrides previous server entry and is kept
         const existing = userMap.get(uName);
         if (!existing) {
           userMap.set(uName, u);

@@ -30,6 +30,20 @@ export function addDeletedUsername(nameOrId: string): void {
   }
 }
 
+export function removeDeletedUsername(nameOrId: string): void {
+  try {
+    const clean = String(nameOrId).trim().toLowerCase();
+    if (!clean) return;
+    const current = getDeletedUsernames();
+    if (current.includes(clean)) {
+      const updated = current.filter((item) => item !== clean);
+      localStorage.setItem(DELETED_USERNAMES_KEY, JSON.stringify(updated));
+    }
+  } catch (e) {
+    console.error('Error removing deleted username:', e);
+  }
+}
+
 export function clearDeletedUsernames(): void {
   try {
     localStorage.removeItem(DELETED_USERNAMES_KEY);
@@ -72,19 +86,26 @@ export function getStoredUsers(): BusinessUser[] {
 
 export function saveUsers(users: BusinessUser[]): void {
   try {
-    const deleted = getDeletedUsernames();
-    const cleanUsers = users.filter(
-      (u) =>
-        u &&
-        u.username &&
-        !deleted.includes(String(u.username).toLowerCase()) &&
-        !deleted.includes(String(u.id).toLowerCase())
-    );
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanUsers));
+    // 1. Gather all active usernames/IDs from provided users array
+    const activeIdentifiers = new Set<string>();
+    users.forEach((u) => {
+      if (u) {
+        if (u.id) activeIdentifiers.add(String(u.id).trim().toLowerCase());
+        if (u.username) activeIdentifiers.add(String(u.username).trim().toLowerCase());
+      }
+    });
 
-    // Also sync review topics map for each user into reviewDataMap
+    // 2. Remove any active user from deleted list so they are never filtered out
+    const currentDeleted = getDeletedUsernames();
+    const cleanDeleted = currentDeleted.filter((d) => !activeIdentifiers.has(d));
+    localStorage.setItem(DELETED_USERNAMES_KEY, JSON.stringify(cleanDeleted));
+
+    // 3. Save users
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+
+    // 4. Also sync review topics map for each user into reviewDataMap
     const reviewMap = getStoredReviewDataMap();
-    cleanUsers.forEach((u) => {
+    users.forEach((u) => {
       if (u && u.username) {
         const uName = String(u.username).trim().toLowerCase();
         reviewMap[uName] = {
@@ -97,17 +118,17 @@ export function saveUsers(users: BusinessUser[]): void {
     });
     saveReviewDataMap(reviewMap);
 
-    // Asynchronously push to cloud sync server for cross-device synchronization
-    pushToCloud(cleanUsers, getAdminPassword(), deleted, reviewMap).catch(() => {});
+    // 5. Asynchronously push to cloud sync server for cross-device synchronization
+    pushToCloud(users, getAdminPassword(), cleanDeleted, reviewMap).catch(() => {});
   } catch (err) {
     console.error('Error saving users to storage:', err);
   }
 }
 
-export function getUserByUsername(username: string): BusinessUser | undefined {
-  const users = getStoredUsers();
+export function getUserByUsername(username: string, userList?: BusinessUser[]): BusinessUser | undefined {
+  const users = userList && userList.length > 0 ? userList : getStoredUsers();
   const clean = username.trim().toLowerCase();
-  let found = users.find((u) => u.username.toLowerCase() === clean);
+  let found = users.find((u) => u.username.toLowerCase() === clean || u.id.toLowerCase() === clean);
 
   if (!found && typeof window !== 'undefined') {
     try {
@@ -134,8 +155,14 @@ export function getUserByUsername(username: string): BusinessUser | undefined {
 }
 
 export function saveUser(user: BusinessUser): BusinessUser[] {
+  if (user.id) removeDeletedUsername(user.id);
+  if (user.username) removeDeletedUsername(user.username);
+
   const users = getStoredUsers();
   const cleanUsername = user.username.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '');
+  
+  if (cleanUsername) removeDeletedUsername(cleanUsername);
+
   const updatedUser: BusinessUser = {
     ...user,
     username: cleanUsername,

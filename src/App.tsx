@@ -22,6 +22,7 @@ import { NotFoundPage } from './components/User/NotFoundPage';
 
 export default function App() {
   const [users, setUsers] = useState<BusinessUser[]>([]);
+  const [isSyncDone, setIsSyncDone] = useState<boolean>(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
 
   const getActiveLocation = () => {
@@ -49,10 +50,14 @@ export default function App() {
 
     const doSync = () => {
       syncOnStartup().then(({ users: syncedUsers, updated }) => {
-        if (updated && syncedUsers) {
+        if (syncedUsers && syncedUsers.length > 0) {
           setUsers(syncedUsers);
         }
-      }).catch((err) => console.log('Sync err:', err));
+        setIsSyncDone(true);
+      }).catch((err) => {
+        console.log('Sync err:', err);
+        setIsSyncDone(true);
+      });
     };
 
     doSync();
@@ -166,13 +171,17 @@ export default function App() {
     if (userIndex !== -1 && parts[userIndex + 1]) {
       const username = parts[userIndex + 1].split('?')[0].toLowerCase();
       const isContact = parts[userIndex + 2] ? parts[userIndex + 2].split('?')[0] === 'contact' : false;
-      const foundUser = getUserByUsername(username);
+      const foundUser = getUserByUsername(username, users);
 
       if (foundUser) {
         if (isContact) {
           return { type: 'contact' as const, user: foundUser };
         }
         return { type: 'review' as const, user: foundUser };
+      }
+
+      if (!isSyncDone) {
+        return { type: 'loading' as const, username };
       }
 
       return { type: 'notfound' as const, username };
@@ -227,6 +236,14 @@ export default function App() {
               onWipeAllSuccess={() => setUsers([])}
             />
           )
+        )}
+
+        {route.type === 'loading' && (
+          <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white text-center">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <h2 className="text-lg font-bold text-slate-200">Loading Business Profile...</h2>
+            <p className="text-xs text-slate-400 mt-1">Connecting to cloud server</p>
+          </div>
         )}
 
         {route.type === 'review' && (

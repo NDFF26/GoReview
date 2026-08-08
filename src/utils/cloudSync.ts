@@ -26,7 +26,32 @@ export function mergeUserLists(
   cloudUsers: BusinessUser[],
   deletedUsernames: string[] = []
 ): BusinessUser[] {
-  const deletedSet = new Set(deletedUsernames.map((d) => String(d).trim().toLowerCase()));
+  // Collect active identifiers from local and cloud users
+  const activeIdentifiers = new Set<string>();
+  if (Array.isArray(localUsers)) {
+    localUsers.forEach((u) => {
+      if (u) {
+        if (u.id) activeIdentifiers.add(String(u.id).trim().toLowerCase());
+        if (u.username) activeIdentifiers.add(String(u.username).trim().toLowerCase());
+      }
+    });
+  }
+  if (Array.isArray(cloudUsers)) {
+    cloudUsers.forEach((u) => {
+      if (u) {
+        if (u.id) activeIdentifiers.add(String(u.id).trim().toLowerCase());
+        if (u.username) activeIdentifiers.add(String(u.username).trim().toLowerCase());
+      }
+    });
+  }
+
+  // Ensure deleted set does NOT contain any username/ID that exists in active local/cloud lists
+  const deletedSet = new Set(
+    deletedUsernames
+      .map((d) => String(d).trim().toLowerCase())
+      .filter((d) => !activeIdentifiers.has(d))
+  );
+
   const map = new Map<string, BusinessUser>();
 
   // Process cloud users first
@@ -48,7 +73,7 @@ export function mergeUserLists(
       if (!u || !u.username) continue;
       const uName = String(u.username).trim().toLowerCase();
       const uId = String(u.id || '').trim().toLowerCase();
-      if (deletedSet.has(uName) || deletedSet.has(uId)) {
+      if (deletedSet.has(uName) && deletedSet.has(uId)) {
         continue;
       }
       const existing = map.get(uName);
