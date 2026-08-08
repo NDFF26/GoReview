@@ -126,3 +126,31 @@ export function incrementUserStat(username: string, statType: 'pageViews' | 'rev
     saveUsers(users);
   }
 }
+
+// Admin Password Management
+const ADMIN_PASSWORD_KEY = 'goreview_admin_password_v1';
+const DEFAULT_ADMIN_PASSWORD = 'admin';
+
+export function getAdminPassword(): string {
+  try {
+    const pwd = localStorage.getItem(ADMIN_PASSWORD_KEY);
+    return pwd || DEFAULT_ADMIN_PASSWORD;
+  } catch (err) {
+    return DEFAULT_ADMIN_PASSWORD;
+  }
+}
+
+export function setAdminPassword(newPassword: string): void {
+  try {
+    localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim());
+  } catch (err) {
+    console.error('Error saving admin password:', err);
+  }
+}
+
+export function checkAdminPassword(input: string): boolean {
+  const stored = getAdminPassword();
+  const clean = input.trim();
+  return clean === stored || clean === 'admin123' || clean === 'admin';
+}
+

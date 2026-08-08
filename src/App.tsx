@@ -13,12 +13,18 @@ import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { UserEditorModal } from './components/Admin/UserEditorModal';
 import { QRCodeModal } from './components/QRCodeModal';
 import { ImportExportModal } from './components/Admin/ImportExportModal';
+import { AdminLoginModal } from './components/Admin/AdminLoginModal';
+import { ChangePasswordModal } from './components/Admin/ChangePasswordModal';
 import { ReviewPage } from './components/User/ReviewPage';
 import { ContactPage } from './components/User/ContactPage';
 import { NotFoundPage } from './components/User/NotFoundPage';
 
 export default function App() {
   const [users, setUsers] = useState<BusinessUser[]>([]);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('goreview_admin_auth') === 'true';
+  });
+
   const getActiveLocation = () => {
     if (window.location.hash && window.location.hash.length > 1) {
       return window.location.hash.replace(/^#/, '');
@@ -36,6 +42,7 @@ export default function App() {
   const [qrUser, setQrUser] = useState<BusinessUser | null>(null);
 
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
 
   useEffect(() => {
     const loaded = getStoredUsers();
@@ -62,6 +69,16 @@ export default function App() {
     }
     setCurrentPath(path);
     window.scrollTo(0, 0);
+  };
+
+  const handleAdminAuthSuccess = () => {
+    sessionStorage.setItem('goreview_admin_auth', 'true');
+    setIsAdminAuthenticated(true);
+  };
+
+  const handleAdminLogout = () => {
+    sessionStorage.removeItem('goreview_admin_auth');
+    setIsAdminAuthenticated(false);
   };
 
   const handleSaveUser = (newUser: BusinessUser) => {
@@ -132,7 +149,6 @@ export default function App() {
 
     // Look for 'user' or 'admin' segment anywhere in parts array
     const userIndex = parts.findIndex((p) => p.toLowerCase() === 'user');
-    const adminIndex = parts.findIndex((p) => p.toLowerCase() === 'admin');
 
     if (userIndex !== -1 && parts[userIndex + 1]) {
       const username = parts[userIndex + 1].toLowerCase();
@@ -156,39 +172,47 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-500 selection:text-white">
-      {/* Persistent Navbar for easy testing & navigation */}
-      <Navbar
-        currentPath={currentPath}
-        users={users}
-        onNavigate={navigateTo}
-        onAddNewUser={() => {
-          setEditingUser(null);
-          setEditorModalOpen(true);
-        }}
-      />
+      {/* Navbar rendered ONLY on Admin Route when authenticated */}
+      {route.type === 'admin' && isAdminAuthenticated && (
+        <Navbar
+          currentPath={currentPath}
+          users={users}
+          onNavigate={navigateTo}
+          onAddNewUser={() => {
+            setEditingUser(null);
+            setEditorModalOpen(true);
+          }}
+          onLogout={handleAdminLogout}
+          onChangePassword={() => setChangePasswordModalOpen(true)}
+        />
+      )}
 
       {/* Main View Router */}
       <main>
         {route.type === 'admin' && (
-          <AdminDashboard
-            users={users}
-            onAddNewUser={() => {
-              setEditingUser(null);
-              setEditorModalOpen(true);
-            }}
-            onEditUser={(user) => {
-              setEditingUser(user);
-              setEditorModalOpen(true);
-            }}
-            onDeleteUser={handleDeleteUser}
-            onToggleDisableUser={handleToggleDisableUser}
-            onOpenQRModal={(user) => {
-              setQrUser(user);
-              setQrModalOpen(true);
-            }}
-            onOpenImportExport={() => setImportModalOpen(true)}
-            onNavigate={navigateTo}
-          />
+          !isAdminAuthenticated ? (
+            <AdminLoginModal isOpen={true} onSuccess={handleAdminAuthSuccess} />
+          ) : (
+            <AdminDashboard
+              users={users}
+              onAddNewUser={() => {
+                setEditingUser(null);
+                setEditorModalOpen(true);
+              }}
+              onEditUser={(user) => {
+                setEditingUser(user);
+                setEditorModalOpen(true);
+              }}
+              onDeleteUser={handleDeleteUser}
+              onToggleDisableUser={handleToggleDisableUser}
+              onOpenQRModal={(user) => {
+                setQrUser(user);
+                setQrModalOpen(true);
+              }}
+              onOpenImportExport={() => setImportModalOpen(true)}
+              onNavigate={navigateTo}
+            />
+          )
         )}
 
         {route.type === 'review' && (
@@ -234,6 +258,12 @@ export default function App() {
         onImport={handleImportUsers}
         onResetToDefaults={handleResetDefaults}
       />
+
+      <ChangePasswordModal
+        isOpen={changePasswordModalOpen}
+        onClose={() => setChangePasswordModalOpen(false)}
+      />
     </div>
   );
 }
+
