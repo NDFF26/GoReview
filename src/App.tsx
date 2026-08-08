@@ -86,6 +86,17 @@ export default function App() {
 
     window.addEventListener('popstate', handleRouteChange);
     window.addEventListener('hashchange', handleRouteChange);
+
+    // Auto sync direct pathname visits to hash route for GitHub Pages refresh support
+    const rawPath = window.location.pathname;
+    const userIdx = rawPath.toLowerCase().indexOf('/user/');
+    const adminIdx = rawPath.toLowerCase().indexOf('/admin');
+    if (!window.location.hash && userIdx !== -1) {
+      window.location.hash = '#' + rawPath.substring(userIdx);
+    } else if (!window.location.hash && adminIdx !== -1) {
+      window.location.hash = '#' + rawPath.substring(adminIdx);
+    }
+
     return () => {
       unsubscribeFirebase();
       clearInterval(interval);
@@ -96,13 +107,12 @@ export default function App() {
   }, []);
 
   const navigateTo = (path: string) => {
-    try {
-      window.history.pushState({}, '', path);
-    } catch (e) {
-      // Fallback to hash navigation for strict static hosts
-      window.location.hash = path;
-    }
-    setCurrentPath(path);
+    const cleanPath = path.startsWith('#') ? path.substring(1) : path;
+    const formattedHash = `#${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+
+    // Update location hash for 100% static host reload compatibility
+    window.location.hash = formattedHash;
+    setCurrentPath(cleanPath);
     window.scrollTo(0, 0);
   };
 

@@ -17,14 +17,14 @@
         if (userIdx !== -1) {
           var base = path.substring(0, userIdx);
           var subPath = path.substring(userIdx);
-          window.location.replace(base + '/#' + subPath + search + hash);
+          window.location.replace((base || '') + '/#' + subPath + search + hash);
         } else if (adminIdx !== -1) {
           var base = path.substring(0, adminIdx);
           var subPath = path.substring(adminIdx);
-          window.location.replace(base + '/#' + subPath + search + hash);
+          window.location.replace((base || '') + '/#' + subPath + search + hash);
         } else {
-          // Fallback to base index with hash
-          window.location.replace('/#' + path + search + hash);
+          var cleanBase = path.replace(/\/$/, '');
+          window.location.replace((cleanBase || '') + '/#' + search + hash);
         }
       })();
     </script>
