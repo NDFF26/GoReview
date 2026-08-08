@@ -78,7 +78,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white pt-8 pb-16 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center space-x-2 bg-blue-500/20 text-blue-300 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/30 mb-3">
+            <div className="inline-flex items-center space-x-2.5 bg-blue-500/20 text-blue-300 text-xs font-semibold px-3.5 py-1.5 rounded-full border border-blue-500/30 mb-3 backdrop-blur-sm">
+              <img 
+                src="./logo.png" 
+                alt="GoReview Logo" 
+                className="w-5 h-5 object-contain rounded-md"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }} 
+              />
               <Sparkles className="w-3.5 h-3.5 text-blue-400" />
               <span>GoReview Subscription & Client Portal</span>
             </div>
