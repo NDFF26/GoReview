@@ -94,7 +94,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onSucc
             {error && (
               <div className="flex items-center space-x-1.5 mt-2 text-xs text-red-400">
                 <ShieldAlert className="w-4 h-4 shrink-0" />
-                <span>Incorrect admin password. Try 'admin' or 'admin123'.</span>
+                <span>Incorrect admin password. Please try again.</span>
               </div>
             )}
           </div>

@@ -200,7 +200,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredUsers.map((u) => {
-              const userUrls = getUserFullUrls(u.username);
+              const userUrls = getUserFullUrls(u);
               const reviewPath = `/user/${u.username}`;
               const contactPath = `/user/${u.username}/contact`;
               const fullReviewUrl = userUrls.reviewUrl;

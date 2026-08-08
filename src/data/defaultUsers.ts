@@ -24,13 +24,7 @@ export const INITIAL_USERS: BusinessUser[] = [
     website: 'https://goreview.in/user/velocityi2/',
     youtube: 'https://youtube.com/@velocityi2',
     linkedin: 'https://linkedin.com/company/velocityi2',
-    topics: [
-      'PCB Design',
-      'Hardware Design',
-      'Firmware',
-      'Product Development',
-      'Product Purchase'
-    ],
+    topics: [],
     languages: [
       'English',
       'Gujarati',
@@ -86,12 +80,7 @@ export const INITIAL_USERS: BusinessUser[] = [
     instagram: 'https://instagram.com/khushiagency',
     facebook: 'https://facebook.com/khushiagency',
     website: 'https://goreview.in/user/khushiagency/',
-    topics: [
-      'Insurance Advisory',
-      'Documentation',
-      'Financial Consulting',
-      'Property Paperwork'
-    ],
+    topics: [],
     languages: [
       'English',
       'Gujarati',

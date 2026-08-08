@@ -15,7 +15,7 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ user, isOpen, onClose 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
-  const urls = getUserFullUrls(user.username);
+  const urls = getUserFullUrls(user);
   const currentUrl = activeTab === 'review' ? urls.reviewUrl : urls.contactUrl;
 
   useEffect(() => {

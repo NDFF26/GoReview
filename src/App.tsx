@@ -151,8 +151,8 @@ export default function App() {
     const userIndex = parts.findIndex((p) => p.toLowerCase() === 'user');
 
     if (userIndex !== -1 && parts[userIndex + 1]) {
-      const username = parts[userIndex + 1].toLowerCase();
-      const isContact = parts[userIndex + 2] === 'contact';
+      const username = parts[userIndex + 1].split('?')[0].toLowerCase();
+      const isContact = parts[userIndex + 2] ? parts[userIndex + 2].split('?')[0] === 'contact' : false;
       const foundUser = getUserByUsername(username);
 
       if (foundUser) {

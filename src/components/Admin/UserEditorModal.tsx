@@ -56,7 +56,7 @@ export const UserEditorModal: React.FC<UserEditorModalProps> = ({
     youtube: '',
     twitter: '',
     linkedin: '',
-    topics: ['PCB Design', 'Hardware Design', 'Firmware', 'Product Development', 'Product Purchase'],
+    topics: [],
     languages: ['English', 'Gujarati', 'Hindi'],
     reviewOptions: [
       { id: '1', text: 'Outstanding service and friendly staff! Highly recommended.', category: 'Service' },
@@ -153,9 +153,7 @@ export const UserEditorModal: React.FC<UserEditorModalProps> = ({
     if (userToEdit) {
       setFormData({
         ...userToEdit,
-        topics: userToEdit.topics && userToEdit.topics.length > 0
-          ? userToEdit.topics
-          : ['PCB Design', 'Hardware Design', 'Firmware', 'Product Development', 'Product Purchase'],
+        topics: userToEdit.topics || [],
         languages: userToEdit.languages && userToEdit.languages.length > 0
           ? userToEdit.languages
           : ['English', 'Gujarati', 'Hindi'],
@@ -187,7 +185,7 @@ export const UserEditorModal: React.FC<UserEditorModalProps> = ({
         youtube: '',
         twitter: '',
         linkedin: '',
-        topics: ['PCB Design', 'Hardware Design', 'Firmware', 'Product Development', 'Product Purchase'],
+        topics: [],
         languages: ['English', 'Gujarati', 'Hindi'],
         reviewOptions: [
           { id: '1', text: 'Outstanding service and friendly staff! Highly recommended.', category: 'General' },
@@ -239,6 +237,18 @@ export const UserEditorModal: React.FC<UserEditorModalProps> = ({
     setFormData((prev) => ({
       ...prev,
       reviewOptions: (prev.reviewOptions || []).filter((opt) => opt.id !== id)
+    }));
+  };
+
+  const setPresetSubscriptionDays = (days: number) => {
+    const start = formData.subscriptionStartDate ? new Date(formData.subscriptionStartDate) : new Date();
+    const exp = new Date(start);
+    exp.setDate(exp.getDate() + days);
+
+    setFormData((prev) => ({
+      ...prev,
+      subscriptionStartDate: start.toISOString().split('T')[0],
+      subscriptionExpiryDate: exp.toISOString().split('T')[0]
     }));
   };
 
@@ -705,6 +715,13 @@ export const UserEditorModal: React.FC<UserEditorModalProps> = ({
                   Quick Extend Plan Duration
                 </label>
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPresetSubscriptionDays(3)}
+                    className="px-3.5 py-2 bg-blue-500 text-white hover:bg-blue-600 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-1"
+                  >
+                    <span>3 Days Trial</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setPresetSubscription(1)}

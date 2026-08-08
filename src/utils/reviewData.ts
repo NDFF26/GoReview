@@ -41,14 +41,14 @@ export function getBusinessTopicsAndLanguages(userOrUsername: BusinessUser | str
   const cleanUser = username.trim().toLowerCase();
   const storedData = map[cleanUser];
 
-  // Topics priority: userObj.topics -> storedData.topics -> defaults
+  // Topics priority: userObj.topics -> storedData.topics -> empty []
   let topics: string[] = [];
-  if (userObj?.topics && userObj.topics.length > 0) {
+  if (userObj && Array.isArray(userObj.topics)) {
     topics = userObj.topics;
-  } else if (storedData?.topics && storedData.topics.length > 0) {
+  } else if (storedData && Array.isArray(storedData.topics)) {
     topics = storedData.topics;
   } else {
-    topics = ['PCB Design', 'Hardware Design', 'Firmware', 'Product Development', 'Product Purchase'];
+    topics = [];
   }
 
   // Languages priority: userObj.languages -> storedData.languages -> defaults

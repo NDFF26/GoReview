@@ -1,6 +1,7 @@
 import { BusinessUser } from '../types/user';
 import { INITIAL_USERS } from '../data/defaultUsers';
 import { getStoredReviewDataMap, saveReviewDataMap } from './reviewData';
+import { decodeUserParam } from './urlUtils';
 
 const STORAGE_KEY = 'goreview_business_users_v1';
 
@@ -33,7 +34,30 @@ export function saveUsers(users: BusinessUser[]): void {
 export function getUserByUsername(username: string): BusinessUser | undefined {
   const users = getStoredUsers();
   const clean = username.trim().toLowerCase();
-  return users.find((u) => u.username.toLowerCase() === clean);
+  let found = users.find((u) => u.username.toLowerCase() === clean);
+
+  if (!found && typeof window !== 'undefined') {
+    try {
+      const href = window.location.href;
+      let paramVal = '';
+      if (href.includes('?')) {
+        const searchPart = href.split('?')[1];
+        const params = new URLSearchParams(searchPart);
+        paramVal = params.get('p') || params.get('data') || params.get('u') || '';
+      }
+      if (paramVal) {
+        const decoded = decodeUserParam(paramVal);
+        if (decoded && decoded.username && decoded.username.toLowerCase() === clean) {
+          saveUser(decoded as BusinessUser);
+          return decoded as BusinessUser;
+        }
+      }
+    } catch (e) {
+      console.error('Error auto-extracting user from URL parameter:', e);
+    }
+  }
+
+  return found;
 }
 
 export function saveUser(user: BusinessUser): BusinessUser[] {
@@ -151,6 +175,6 @@ export function setAdminPassword(newPassword: string): void {
 export function checkAdminPassword(input: string): boolean {
   const stored = getAdminPassword();
   const clean = input.trim();
-  return clean === stored || clean === 'admin123' || clean === 'admin';
+  return clean === stored;
 }
 
