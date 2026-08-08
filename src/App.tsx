@@ -6,7 +6,8 @@ import {
   deleteUser as deleteUserFromStorage,
   toggleDisableUser,
   resetToDefaults,
-  getUserByUsername
+  getUserByUsername,
+  performFreshStart
 } from './utils/storage';
 import { syncOnStartup } from './utils/cloudSync';
 import { subscribeToFirestore } from './utils/firebaseSync';
@@ -46,6 +47,10 @@ export default function App() {
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
 
   useEffect(() => {
+    if (localStorage.getItem('goreview_fresh_start_done_v2') !== 'true') {
+      performFreshStart();
+    }
+
     const loaded = getStoredUsers();
     setUsers(loaded);
 

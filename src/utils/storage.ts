@@ -57,11 +57,8 @@ export function getStoredUsers(): BusinessUser[] {
     const deleted = getDeletedUsernames();
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const initialFiltered = INITIAL_USERS.filter(
-        (u) => !deleted.includes(u.username.toLowerCase()) && !deleted.includes(u.id.toLowerCase())
-      );
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialFiltered));
-      return initialFiltered;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+      return [];
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
@@ -74,13 +71,10 @@ export function getStoredUsers(): BusinessUser[] {
       );
       return filtered;
     }
-    const initialFiltered = INITIAL_USERS.filter(
-      (u) => !deleted.includes(u.username.toLowerCase()) && !deleted.includes(u.id.toLowerCase())
-    );
-    return initialFiltered;
+    return [];
   } catch (err) {
     console.error('Error reading stored users:', err);
-    return INITIAL_USERS;
+    return [];
   }
 }
 
@@ -246,8 +240,8 @@ export function toggleDisableUser(userId: string): BusinessUser[] {
 
 export function resetToDefaults(): BusinessUser[] {
   clearDeletedUsernames();
-  saveUsers(INITIAL_USERS);
-  return INITIAL_USERS;
+  saveUsers([]);
+  return [];
 }
 
 export function incrementUserStat(username: string, statType: 'pageViews' | 'reviewClicks' | 'contactClicks'): void {
@@ -289,50 +283,26 @@ export function checkAdminPassword(input: string): boolean {
   return clean === stored;
 }
 
+export function performFreshStart(): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    localStorage.setItem(DELETED_USERNAMES_KEY, JSON.stringify([]));
+    clearStoredReviewDataMap();
+    wipeCloudStore(getAdminPassword(), []).catch(() => {});
+    localStorage.setItem('goreview_fresh_start_done_v2', 'true');
+  } catch (e) {
+    console.error('Error performing fresh start:', e);
+  }
+}
+
 export function wipeAllDataAndDatabase(password: string): { success: boolean; message: string } {
   if (!checkAdminPassword(password)) {
     return { success: false, message: 'Incorrect Admin Password! Wipe operation cancelled.' };
   }
 
-  // 1. Gather all existing usernames to place on deleted list
-  const currentUsers = getStoredUsers();
-  const allUsernames = new Set<string>();
+  performFreshStart();
 
-  currentUsers.forEach((u) => {
-    if (u.id) allUsernames.add(u.id.toLowerCase());
-    if (u.username) allUsernames.add(u.username.toLowerCase());
-  });
-
-  INITIAL_USERS.forEach((u) => {
-    if (u.id) allUsernames.add(u.id.toLowerCase());
-    if (u.username) allUsernames.add(u.username.toLowerCase());
-  });
-
-  try {
-    const reviewMap = getStoredReviewDataMap();
-    Object.keys(reviewMap).forEach((k) => allUsernames.add(k.toLowerCase()));
-  } catch (e) {
-    // Ignore map read errors
-  }
-
-  const deletedList = Array.from(allUsernames);
-
-  // 2. Clear Local Storage
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
-    localStorage.setItem(DELETED_USERNAMES_KEY, JSON.stringify(deletedList));
-  } catch (e) {
-    console.error('Error clearing local storage users:', e);
-  }
-
-  // 3. Clear review data map in local storage
-  clearStoredReviewDataMap();
-
-  // 4. Wipe cloud store & database
-  wipeCloudStore(getAdminPassword(), deletedList).catch((err) =>
-    console.error('Failed to wipe cloud store:', err)
-  );
-
-  return { success: true, message: 'All users and database data cleared successfully!' };
+  return { success: true, message: 'All users and Firebase database data cleared successfully!' };
 }
+
 
