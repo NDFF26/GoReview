@@ -78,7 +78,7 @@ export function getStoredUsers(): BusinessUser[] {
   }
 }
 
-export function saveUsers(users: BusinessUser[]): void {
+export function saveUsers(users: BusinessUser[], skipCloudPush: boolean = false): void {
   try {
     // 1. Gather all active usernames/IDs from provided users array
     const activeIdentifiers = new Set<string>();
@@ -104,16 +104,18 @@ export function saveUsers(users: BusinessUser[]): void {
         const uName = String(u.username).trim().toLowerCase();
         reviewMap[uName] = {
           businessName: u.businessName || '',
-          topics: u.topics || [],
-          languages: u.languages || ['English', 'Gujarati', 'Hindi'],
+          topics: Array.isArray(u.topics) ? u.topics : [],
+          languages: Array.isArray(u.languages) ? u.languages : ['English', 'Gujarati', 'Hindi'],
           reviews: reviewMap[uName]?.reviews || {}
         };
       }
     });
     saveReviewDataMap(reviewMap);
 
-    // 5. Asynchronously push to cloud sync server for cross-device synchronization
-    pushToCloud(users, getAdminPassword(), cleanDeleted, reviewMap).catch(() => {});
+    // 5. Asynchronously push to cloud sync server ONLY when not skipped (e.g. from local user edits)
+    if (!skipCloudPush) {
+      pushToCloud(users, getAdminPassword(), cleanDeleted, reviewMap).catch(() => {});
+    }
   } catch (err) {
     console.error('Error saving users to storage:', err);
   }
@@ -250,7 +252,7 @@ export function incrementUserStat(username: string, statType: 'pageViews' | 'rev
   const user = users.find((u) => u.username.toLowerCase() === clean);
   if (user) {
     user[statType] = (user[statType] || 0) + 1;
-    saveUsers(users);
+    saveUsers(users, true);
   }
 }
 

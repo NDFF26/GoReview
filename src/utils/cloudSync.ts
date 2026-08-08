@@ -8,10 +8,9 @@ import {
   addDeletedUsername
 } from './storage';
 import { getStoredReviewDataMap, saveReviewDataMap } from './reviewData';
-import defaultReviewsMap from '../data/defaultReviews.json';
+import { fetchFromFirestore, pushToFirestore, wipeFirestore } from './firebaseSync';
 
 const PRIMARY_SYNC_API = '/api/sync';
-const PUBLIC_CLOUD_OBJECT_URL = 'https://api.restful-api.dev/objects/ff8081819f7e10ae019fe14562b7114c';
 
 export interface CloudPayload {
   users: BusinessUser[];
@@ -98,7 +97,7 @@ export function mergeReviewDataMaps(
   deletedUsernames: string[] = []
 ): BusinessReviewDataMap {
   const deletedSet = new Set(deletedUsernames.map((d) => String(d).trim().toLowerCase()));
-  const resultMap: BusinessReviewDataMap = { ...(defaultReviewsMap as BusinessReviewDataMap), ...localMap, ...cloudMap };
+  const resultMap: BusinessReviewDataMap = { ...localMap, ...cloudMap };
 
   const allKeys = new Set([...Object.keys(localMap || {}), ...Object.keys(cloudMap || {})]);
   for (const key of allKeys) {
@@ -115,8 +114,8 @@ export function mergeReviewDataMaps(
     if (localEntry && cloudEntry) {
       resultMap[key] = {
         businessName: cloudEntry.businessName || localEntry.businessName || '',
-        topics: Array.from(new Set([...(localEntry.topics || []), ...(cloudEntry.topics || [])])),
-        languages: Array.from(new Set([...(localEntry.languages || []), ...(cloudEntry.languages || [])])),
+        topics: Array.isArray(cloudEntry.topics) ? cloudEntry.topics : (Array.isArray(localEntry.topics) ? localEntry.topics : []),
+        languages: Array.isArray(cloudEntry.languages) ? cloudEntry.languages : (Array.isArray(localEntry.languages) ? localEntry.languages : ['English', 'Gujarati', 'Hindi']),
         reviews: { ...(localEntry.reviews || {}), ...(cloudEntry.reviews || {}) }
       };
     } else if (cloudEntry) {
@@ -134,8 +133,6 @@ export function mergeReviewDataMaps(
   return resultMap;
 }
 
-import { fetchFromFirestore, pushToFirestore, wipeFirestore } from './firebaseSync';
-
 export async function fetchFromCloud(): Promise<CloudPayload | null> {
   // 1. Try Firebase Firestore first for real-time multi-device cloud database
   try {
@@ -149,7 +146,7 @@ export async function fetchFromCloud(): Promise<CloudPayload | null> {
       };
     }
   } catch (e) {
-    console.warn('Firebase Firestore fetch error:', e);
+    // Firestore fetch error ignored
   }
 
   // 2. Try primary Express API sync route next
@@ -165,24 +162,9 @@ export async function fetchFromCloud(): Promise<CloudPayload | null> {
       }
     }
   } catch (e) {
-    // API endpoint unavailable (e.g. GitHub Pages)
+    // API endpoint unavailable
   }
 
-  // 3. Fallback to public CORS-enabled cloud store for static GitHub Pages & mobile browsers
-  try {
-    const res = await fetch(PUBLIC_CLOUD_OBJECT_URL, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.data && Array.isArray(json.data.users)) {
-        return json.data as CloudPayload;
-      }
-    }
-  } catch (err) {
-    console.warn('Public cloud sync fetch warning:', err);
-  }
   return null;
 }
 
@@ -210,7 +192,7 @@ export async function pushToCloud(
     const fsOk = await pushToFirestore(users, deleted, currentReviewMap);
     if (fsOk) success = true;
   } catch (e) {
-    console.error('Firebase Firestore push error:', e);
+    // Firebase Firestore push error ignored
   }
 
   // 2. Push to Express backend /api/sync if available
@@ -225,23 +207,6 @@ export async function pushToCloud(
     }
   } catch (e) {
     // Express backend not available
-  }
-
-  // 3. Push to public CORS-enabled cloud object for GitHub Pages & mobile sync
-  try {
-    const res = await fetch(PUBLIC_CLOUD_OBJECT_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'GoReview SAAS Database',
-        data: payload
-      })
-    });
-    if (res.ok) {
-      success = true;
-    }
-  } catch (err) {
-    console.warn('Public cloud push warning:', err);
   }
 
   return success;
@@ -263,7 +228,7 @@ export async function wipeCloudStore(adminPassword: string, deletedUsernames: st
     const fsWipe = await wipeFirestore(deletedUsernames);
     if (fsWipe) success = true;
   } catch (e) {
-    console.error('Failed to wipe Firestore:', e);
+    // Failed to wipe Firestore
   }
 
   // 2. Send clear to Express backend server
@@ -275,19 +240,7 @@ export async function wipeCloudStore(adminPassword: string, deletedUsernames: st
     });
     if (res.ok) success = true;
   } catch (e) {
-    console.error('Failed to clear Express sync API:', e);
-  }
-
-  // 3. Send empty payload to Public Cloud JSON Store
-  try {
-    const cloudRes = await fetch(PUBLIC_CLOUD_OBJECT_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'GoReview_Global_Sync_Object', data: payload })
-    });
-    if (cloudRes.ok) success = true;
-  } catch (e) {
-    console.error('Failed to clear Public Cloud Object:', e);
+    // Failed to clear Express sync API
   }
 
   return success;
@@ -312,7 +265,9 @@ export async function syncOnStartup(): Promise<{ users: BusinessUser[]; updated:
     combinedDeleted.forEach((d) => addDeletedUsername(d));
 
     const mergedUsers = mergeUserLists(localUsers, cloudData.users, combinedDeleted);
-    saveUsers(mergedUsers);
+
+    // Save merged users locally skipping cloud push to avoid duplicate push loop
+    saveUsers(mergedUsers, true);
 
     // Merge reviewDataMap
     const cloudReviewMap = cloudData.reviewDataMap || {};
@@ -324,8 +279,8 @@ export async function syncOnStartup(): Promise<{ users: BusinessUser[]; updated:
         const uName = String(u.username).trim().toLowerCase();
         mergedReviewMap[uName] = {
           businessName: u.businessName || '',
-          topics: u.topics || [],
-          languages: u.languages || ['English', 'Gujarati', 'Hindi'],
+          topics: Array.isArray(u.topics) ? u.topics : [],
+          languages: Array.isArray(u.languages) ? u.languages : ['English', 'Gujarati', 'Hindi'],
           reviews: mergedReviewMap[uName]?.reviews || {}
         };
       }
@@ -337,7 +292,6 @@ export async function syncOnStartup(): Promise<{ users: BusinessUser[]; updated:
       setAdminPassword(cloudData.adminPassword);
     }
 
-    pushToCloud(mergedUsers, cloudData.adminPassword, combinedDeleted, mergedReviewMap).catch(() => {});
     return { users: mergedUsers, updated: true };
   } else if (localUsers && localUsers.length > 0) {
     pushToCloud(localUsers, getAdminPassword(), localDeleted, localReviewMap).catch(() => {});

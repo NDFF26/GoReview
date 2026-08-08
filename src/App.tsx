@@ -76,8 +76,7 @@ export default function App() {
       setIsSyncDone(true);
     });
 
-    // Auto-sync every 8 seconds and when window/tab regains focus
-    const interval = setInterval(doSync, 8000);
+    // Auto-sync when window/tab regains focus
     window.addEventListener('focus', doSync);
 
     const handleRouteChange = () => {
@@ -99,7 +98,6 @@ export default function App() {
 
     return () => {
       unsubscribeFirebase();
-      clearInterval(interval);
       window.removeEventListener('focus', doSync);
       window.removeEventListener('popstate', handleRouteChange);
       window.removeEventListener('hashchange', handleRouteChange);

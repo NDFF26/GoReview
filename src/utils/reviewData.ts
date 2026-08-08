@@ -1,5 +1,6 @@
 import defaultReviewsMap from '../data/defaultReviews.json';
 import { BusinessReviewDataMap, BusinessUser } from '../types/user';
+import { getUserByUsername } from './storage';
 
 const REVIEWS_STORAGE_KEY = 'goreview_business_topics_reviews_v1';
 
@@ -9,13 +10,13 @@ export function getStoredReviewDataMap(): BusinessReviewDataMap {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        return { ...defaultReviewsMap, ...parsed };
+        return parsed;
       }
     }
   } catch (e) {
     console.error('Failed to parse stored review data map:', e);
   }
-  return defaultReviewsMap as BusinessReviewDataMap;
+  return {};
 }
 
 export function saveReviewDataMap(map: BusinessReviewDataMap): void {
@@ -40,13 +41,14 @@ export function getBusinessTopicsAndLanguages(userOrUsername: BusinessUser | str
 
   if (typeof userOrUsername === 'string') {
     username = userOrUsername;
+    userObj = getUserByUsername(username);
   } else {
     userObj = userOrUsername;
-    username = userObj.username;
+    username = userObj ? userObj.username : '';
   }
 
   const map = getStoredReviewDataMap();
-  const cleanUser = username.trim().toLowerCase();
+  const cleanUser = (username || '').trim().toLowerCase();
   const storedData = map[cleanUser];
 
   // Topics priority: userObj.topics -> storedData.topics -> empty []
@@ -61,9 +63,9 @@ export function getBusinessTopicsAndLanguages(userOrUsername: BusinessUser | str
 
   // Languages priority: userObj.languages -> storedData.languages -> defaults
   let languages: string[] = [];
-  if (userObj?.languages && userObj.languages.length > 0) {
+  if (userObj && Array.isArray(userObj.languages)) {
     languages = userObj.languages;
-  } else if (storedData?.languages && storedData.languages.length > 0) {
+  } else if (storedData && Array.isArray(storedData.languages) && storedData.languages.length > 0) {
     languages = storedData.languages;
   } else {
     languages = ['English', 'Gujarati', 'Hindi'];
