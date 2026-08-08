@@ -11,7 +11,7 @@ async function startServer() {
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // In-memory global store on the backend server for instant cross-device SAAS sync
-  let serverSyncStore: { users: any[]; adminPassword?: string; updatedAt: string } | null = null;
+  let serverSyncStore: { users: any[]; deletedUsernames?: string[]; adminPassword?: string; updatedAt: string } | null = null;
 
   app.get("/api/sync", (req, res) => {
     if (!serverSyncStore) {
@@ -22,10 +22,17 @@ async function startServer() {
 
   app.post("/api/sync", (req, res) => {
     try {
-      const { users, adminPassword, updatedAt } = req.body;
+      const { users, deletedUsernames, adminPassword, updatedAt } = req.body;
       if (!Array.isArray(users)) {
         return res.status(400).json({ error: "Invalid users array" });
       }
+
+      const currentDeleted = serverSyncStore?.deletedUsernames || [];
+      const incomingDeleted = Array.isArray(deletedUsernames) ? deletedUsernames : [];
+      const combinedDeleted = Array.from(
+        new Set([...currentDeleted, ...incomingDeleted].map((s) => String(s).trim().toLowerCase()))
+      );
+      const deletedSet = new Set(combinedDeleted);
 
       // Merge incoming users with server store
       const currentUsers = serverSyncStore?.users || [];
@@ -33,21 +40,28 @@ async function startServer() {
 
       for (const u of currentUsers) {
         if (u && u.username) {
-          userMap.set(u.username.toLowerCase(), u);
+          const uName = String(u.username).trim().toLowerCase();
+          const uId = String(u.id || '').trim().toLowerCase();
+          if (!deletedSet.has(uName) && !deletedSet.has(uId)) {
+            userMap.set(uName, u);
+          }
         }
       }
 
       for (const u of users) {
         if (!u || !u.username) continue;
-        const key = u.username.toLowerCase();
-        const existing = userMap.get(key);
+        const uName = String(u.username).trim().toLowerCase();
+        const uId = String(u.id || '').trim().toLowerCase();
+        if (deletedSet.has(uName) || deletedSet.has(uId)) continue;
+
+        const existing = userMap.get(uName);
         if (!existing) {
-          userMap.set(key, u);
+          userMap.set(uName, u);
         } else {
           const incomingTime = new Date(u.updatedAt || 0).getTime();
           const existingTime = new Date(existing.updatedAt || 0).getTime();
           if (incomingTime >= existingTime) {
-            userMap.set(key, u);
+            userMap.set(uName, u);
           }
         }
       }
@@ -55,6 +69,7 @@ async function startServer() {
       const mergedUsers = Array.from(userMap.values());
       serverSyncStore = {
         users: mergedUsers,
+        deletedUsernames: combinedDeleted,
         adminPassword: adminPassword || serverSyncStore?.adminPassword || 'admin',
         updatedAt: updatedAt || new Date().toISOString()
       };

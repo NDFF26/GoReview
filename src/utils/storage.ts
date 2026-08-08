@@ -5,21 +5,65 @@ import { decodeUserParam } from './urlUtils';
 import { pushToCloud, mergeUserLists } from './cloudSync';
 
 const STORAGE_KEY = 'goreview_business_users_v1';
+const DELETED_USERNAMES_KEY = 'goreview_deleted_usernames_v1';
+
+export function getDeletedUsernames(): string[] {
+  try {
+    const raw = localStorage.getItem(DELETED_USERNAMES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function addDeletedUsername(nameOrId: string): void {
+  try {
+    const clean = String(nameOrId).trim().toLowerCase();
+    if (!clean) return;
+    const current = getDeletedUsernames();
+    if (!current.includes(clean)) {
+      current.push(clean);
+      localStorage.setItem(DELETED_USERNAMES_KEY, JSON.stringify(current));
+    }
+  } catch (e) {
+    console.error('Error saving deleted username:', e);
+  }
+}
+
+export function clearDeletedUsernames(): void {
+  try {
+    localStorage.removeItem(DELETED_USERNAMES_KEY);
+  } catch (e) {
+    console.error('Error clearing deleted usernames:', e);
+  }
+}
 
 export function getStoredUsers(): BusinessUser[] {
   try {
+    const deleted = getDeletedUsernames();
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_USERS));
-      return INITIAL_USERS;
+      const initialFiltered = INITIAL_USERS.filter(
+        (u) => !deleted.includes(u.username.toLowerCase()) && !deleted.includes(u.id.toLowerCase())
+      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialFiltered));
+      return initialFiltered;
     }
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      // Merge with default initial users so no default clients are missing on any device
-      const merged = mergeUserLists(parsed, INITIAL_USERS);
-      return merged;
+    if (Array.isArray(parsed)) {
+      const filtered = parsed.filter(
+        (u) =>
+          u &&
+          u.username &&
+          !deleted.includes(String(u.username).toLowerCase()) &&
+          !deleted.includes(String(u.id).toLowerCase())
+      );
+      return filtered;
     }
-    return INITIAL_USERS;
+    const initialFiltered = INITIAL_USERS.filter(
+      (u) => !deleted.includes(u.username.toLowerCase()) && !deleted.includes(u.id.toLowerCase())
+    );
+    return initialFiltered;
   } catch (err) {
     console.error('Error reading stored users:', err);
     return INITIAL_USERS;
@@ -28,9 +72,17 @@ export function getStoredUsers(): BusinessUser[] {
 
 export function saveUsers(users: BusinessUser[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+    const deleted = getDeletedUsernames();
+    const cleanUsers = users.filter(
+      (u) =>
+        u &&
+        u.username &&
+        !deleted.includes(String(u.username).toLowerCase()) &&
+        !deleted.includes(String(u.id).toLowerCase())
+    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanUsers));
     // Asynchronously push to cloud sync server for cross-device synchronization
-    pushToCloud(users, getAdminPassword()).catch(() => {});
+    pushToCloud(cleanUsers, getAdminPassword(), deleted).catch(() => {});
   } catch (err) {
     console.error('Error saving users to storage:', err);
   }
@@ -92,12 +144,19 @@ export function deleteUser(userId: string): BusinessUser[] {
   const users = getStoredUsers();
   const targetStr = String(userId).trim().toLowerCase();
   
-  // Find target user to clean up review data map
+  // Find target user to clean up review data map and add to deleted list
   const targetUser = users.find((u) => {
     const cleanId = String(u.id).trim().toLowerCase();
     const cleanUsername = String(u.username).trim().toLowerCase();
     return cleanId === targetStr || cleanUsername === targetStr;
   });
+
+  if (targetUser) {
+    if (targetUser.id) addDeletedUsername(targetUser.id);
+    if (targetUser.username) addDeletedUsername(targetUser.username);
+  } else {
+    addDeletedUsername(targetStr);
+  }
 
   const filtered = users.filter((u) => {
     const cleanId = String(u.id).trim().toLowerCase();
@@ -127,12 +186,13 @@ export function deleteUser(userId: string): BusinessUser[] {
 export function toggleDisableUser(userId: string): BusinessUser[] {
   const users = getStoredUsers();
   const targetStr = String(userId).trim().toLowerCase();
+  const now = new Date().toISOString();
   
   const updated = users.map((u) => {
     const cleanId = String(u.id).trim().toLowerCase();
     const cleanUsername = String(u.username).trim().toLowerCase();
     if (cleanId === targetStr || cleanUsername === targetStr) {
-      return { ...u, isDisabled: !u.isDisabled, updatedAt: new Date().toISOString() };
+      return { ...u, isDisabled: !u.isDisabled, updatedAt: now };
     }
     return u;
   });
@@ -142,6 +202,7 @@ export function toggleDisableUser(userId: string): BusinessUser[] {
 }
 
 export function resetToDefaults(): BusinessUser[] {
+  clearDeletedUsernames();
   saveUsers(INITIAL_USERS);
   return INITIAL_USERS;
 }
